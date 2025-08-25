@@ -1,4 +1,4 @@
-/* Apenas básico, Tailwind faz a maior parte do trabalho */
 body {
+  margin: 0;
   font-family: 'Inter', sans-serif;
 }
