@@ -1,6 +1,6 @@
-import { useState } from "react";
-import XLSX from "xlsx";
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
+import React, { useState } from "react";
+import * as XLSX from "xlsx";
+import * as pdfjsLib from "pdfjs-dist/build/pdf";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -8,18 +8,21 @@ const cards = [
   {
     icon: "⚡",
     title: "Rápido",
-    description: "Carregue e processe os seus ficheiros em segundos. Analise os dados sem esperas e ganhe tempo para decisões importantes."
+    description:
+      "Carregue e processe os seus ficheiros em segundos. Analise os dados sem esperas e ganhe tempo para decisões importantes.",
   },
   {
     icon: "🧩",
     title: "Simples",
-    description: "Tudo num só lugar: carregamento, pré-visualização e exportação. Automatize tarefas complexas com um clique."
+    description:
+      "Tudo num só lugar: carregamento, pré-visualização e exportação. Automatize tarefas complexas com um clique.",
   },
   {
     icon: "🔒",
     title: "Seguro",
-    description: "Os seus dados permanecem privados e protegidos. Toda a automação cumpre as melhores práticas de segurança."
-  }
+    description:
+      "Os seus dados permanecem privados e protegidos. Toda a automação cumpre as melhores práticas de segurança.",
+  },
 ];
 
 export default function App() {
@@ -31,22 +34,18 @@ export default function App() {
   const handleFileUpload = (event) => {
     const uploaded = Array.from(event.target.files || []);
     if (!uploaded.length) return;
-    setFiles(prev => [...prev, ...uploaded]);
+    setFiles((prev) => [...prev, ...uploaded]);
 
-    uploaded.forEach(file => {
+    uploaded.forEach((file) => {
       const reader = new FileReader();
 
       if (file.name.toLowerCase().endsWith(".xlsx") || file.name.toLowerCase().endsWith(".xls")) {
         reader.onload = (e) => {
-          try {
-            const workbook = XLSX.read(e.target.result, { type: "binary" });
-            const sheetName = workbook.SheetNames[0];
-            const ws = workbook.Sheets[sheetName];
-            const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
-            setPreviews(prev => ({ ...prev, [file.name]: rows }));
-          } catch (err) {
-            setPreviews(prev => ({ ...prev, [file.name]: [["(erro ao ler xlsx)"]] }));
-          }
+          const workbook = XLSX.read(e.target.result, { type: "binary" });
+          const sheetName = workbook.SheetNames[0];
+          const ws = workbook.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+          setPreviews((prev) => ({ ...prev, [file.name]: rows }));
         };
         reader.readAsBinaryString(file);
         return;
@@ -61,13 +60,20 @@ export default function App() {
             for (let p = 1; p <= pagesToRead; p++) {
               const page = await pdf.getPage(p);
               const txt = await page.getTextContent();
-              const pageText = txt.items.map(it => it.str).join(" ");
-              const candidateRows = pageText.split(/\r\n|\n/).map(r => r.trim()).filter(Boolean).slice(0, 200);
-              candidateRows.forEach(r => allRows.push(r.split(/\s{2,}/).map(c => c.trim())));
+              const pageText = txt.items.map((it) => it.str).join(" ");
+              const candidateRows = pageText
+                .split(/\r\n|\n/)
+                .map((r) => r.trim())
+                .filter(Boolean)
+                .slice(0, 200);
+              candidateRows.forEach((r) => {
+                const cols = r.split(/\s{2,}/).map((c) => c.trim());
+                allRows.push(cols.length ? cols : [r]);
+              });
             }
-            setPreviews(prev => ({ ...prev, [file.name]: allRows }));
+            setPreviews((prev) => ({ ...prev, [file.name]: allRows }));
           } catch (err) {
-            setPreviews(prev => ({ ...prev, [file.name]: [["(erro ao ler PDF)"]] }));
+            setPreviews((prev) => ({ ...prev, [file.name]: [["(erro ao ler PDF)"]] }));
           }
         };
         reader.readAsArrayBuffer(file);
@@ -78,8 +84,8 @@ export default function App() {
         const txt = e.target.result;
         if (file.name.toLowerCase().endsWith(".csv")) {
           const lines = txt.split(/\r\n|\n/).filter(Boolean);
-          const rows = lines.map(line => line.split(","));
-          setPreviews(prev => ({ ...prev, [file.name]: rows }));
+          const rows = lines.map((line) => line.split(","));
+          setPreviews((prev) => ({ ...prev, [file.name]: rows }));
           return;
         }
         if (file.name.toLowerCase().endsWith(".json")) {
@@ -87,22 +93,25 @@ export default function App() {
             const parsed = JSON.parse(txt);
             if (Array.isArray(parsed) && parsed.length && typeof parsed[0] === "object") {
               const headers = Object.keys(parsed[0]);
-              const rows = parsed.map(o => headers.map(h => (o[h] === undefined ? "" : String(o[h]))));
-              setPreviews(prev => ({ ...prev, [file.name]: [headers, ...rows] }));
+              const rows = parsed.map((o) => headers.map((h) => (o[h] === undefined ? "" : String(o[h]))));
+              setPreviews((prev) => ({ ...prev, [file.name]: [headers, ...rows] }));
               return;
             }
           } catch (_) {}
+          const lines = txt.split(/\r\n|\n/).slice(0, 200).map((l) => [l]);
+          setPreviews((prev) => ({ ...prev, [file.name]: lines }));
+          return;
         }
-        const lines = txt.split(/\r\n|\n/).slice(0, 200).map(l => [l]);
-        setPreviews(prev => ({ ...prev, [file.name]: lines }));
+        const lines = txt.split(/\r\n|\n/).slice(0, 200).map((l) => [l]);
+        setPreviews((prev) => ({ ...prev, [file.name]: lines }));
       };
       reader.readAsText(file);
     });
   };
 
   const removeFile = (fileName) => {
-    setFiles(prev => prev.filter(f => f.name !== fileName));
-    setPreviews(prev => {
+    setFiles((prev) => prev.filter((f) => f.name !== fileName));
+    setPreviews((prev) => {
       const copy = { ...prev };
       delete copy[fileName];
       return copy;
@@ -116,23 +125,20 @@ export default function App() {
   };
 
   const setRelationForFile = (fileName, col) => {
-    setRelations(prev => ({ ...prev, [fileName]: col }));
+    setRelations((prev) => ({ ...prev, [fileName]: col }));
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-purple-200 font-inter p-6 text-gray-900">
-      <div className="flex justify-end p-3 mb-2">
-        <div className="flex gap-4 text-sm">
-          <span className="hover:underline cursor-pointer">Início</span>
-          <span className="hover:underline cursor-pointer">Serviços</span>
-          <span className="hover:underline cursor-pointer">Pagamento</span>
-          <span className="hover:underline cursor-pointer">Resultado</span>
-        </div>
-      </div>
-
       <header className="text-center my-4">
-        <a href="https://www.klinosinsight.com" target="_blank" rel="noopener noreferrer"
-           className="text-4xl font-bold text-blue-800 hover:underline">Klinos Insight</a>
+        <a
+          href="https://www.klinosinsight.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-4xl font-bold text-blue-800 hover:underline"
+        >
+          Klinos Insight
+        </a>
         <p className="mt-2 text-gray-700">
           Automação inteligente: menos tempo em tarefas, mais tempo em resultados.
         </p>
@@ -153,7 +159,7 @@ export default function App() {
           <label className="text-gray-800 font-medium">Colar ou editar JSON</label>
           <textarea
             value={jsonInput}
-            onChange={e => setJsonInput(e.target.value)}
+            onChange={(e) => setJsonInput(e.target.value)}
             placeholder="Cole aqui o JSON"
             className="w-full p-2 mt-2 rounded h-16 text-gray-800"
           />
@@ -165,7 +171,7 @@ export default function App() {
               <div className="text-gray-800 font-semibold text-lg">
                 Carregar ficheiro <span className="text-sm font-normal">- .csv, .txt, .json, .xlsx, .pdf</span>
               </div>
-              <input type="file" multiple accept=".csv,.txt,.json,.xlsx,.pdf" onChange={handleFileUpload} className="mt-2"/>
+              <input type="file" multiple accept=".csv,.txt,.json,.xlsx,.pdf" onChange={handleFileUpload} className="mt-2" />
             </div>
             <div>
               <button onClick={removeAll} className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition">Apagar todos</button>
@@ -180,7 +186,6 @@ export default function App() {
               <p className="font-semibold text-gray-800">Ficheiro {index + 1}: {f.name}</p>
               <button onClick={() => removeFile(f.name)} className="text-red-600 hover:text-red-800">🗑️</button>
             </div>
-
             <div className="overflow-x-auto">
               <table className="min-w-full border-collapse">
                 <thead>
@@ -213,10 +218,13 @@ export default function App() {
         <h3 className="text-xl font-semibold mb-4">Relacionar colunas</h3>
         {files.length > 1 ? (
           <>
-            {files.map(file => (
+            {files.map((file) => (
               <div key={file.name} className="mb-3">
                 <label className="block font-medium mb-1">{file.name}</label>
-                <select className="border p-2 rounded w-full" onChange={e => setRelationForFile(file.name, e.target.value)}>
+                <select
+                  className="border p-2 rounded w-full"
+                  onChange={(e) => setRelationForFile(file.name, e.target.value)}
+                >
                   <option value="">-- escolher coluna chave --</option>
                   {previews[file.name] && previews[file.name][0] && previews[file.name][0].map((col, i) => (
                     <option key={i} value={col}>{col}</option>
