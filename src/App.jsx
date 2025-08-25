@@ -1,14 +1,8 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
+import { pdfjsLib } from "pdfjs-dist/build/pdf";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
-const cards = [
-  { icon: "⚡", title: "Rápido", description: "Carregue e processe os seus ficheiros em segundos. Analise os dados sem esperas e ganhe tempo para decisões importantes." },
-  { icon: "🧩", title: "Simples", description: "Tudo num só lugar: carregamento, pré-visualização e exportação. Automatize tarefas complexas com um clique." },
-  { icon: "🔒", title: "Seguro", description: "Os seus dados permanecem privados e protegidos. Toda a automação cumpre as melhores práticas de segurança." },
-];
 
 export default function App() {
   const [files, setFiles] = useState([]);
@@ -32,7 +26,7 @@ export default function App() {
             const ws = workbook.Sheets[sheetName];
             const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
             setPreviews((prev) => ({ ...prev, [file.name]: rows }));
-          } catch {
+          } catch (err) {
             setPreviews((prev) => ({ ...prev, [file.name]: [["(erro ao ler xlsx)"]] }));
           }
         };
@@ -80,11 +74,11 @@ export default function App() {
             const parsed = JSON.parse(txt);
             if (Array.isArray(parsed) && parsed.length && typeof parsed[0] === "object") {
               const headers = Object.keys(parsed[0]);
-              const rows = parsed.map((o) => headers.map((h) => (o[h] ?? "")));
+              const rows = parsed.map((o) => headers.map((h) => (o[h] === undefined ? "" : String(o[h]))));
               setPreviews((prev) => ({ ...prev, [file.name]: [headers, ...rows] }));
               return;
             }
-          } catch {}
+          } catch (_) {}
           const lines = txt.split(/\r\n|\n/).slice(0, 200).map((l) => [l]);
           setPreviews((prev) => ({ ...prev, [file.name]: lines }));
           return;
@@ -105,31 +99,48 @@ export default function App() {
     });
   };
 
-  const removeAll = () => {
-    setFiles([]);
-    setPreviews({});
-    setRelations({});
-  };
-
-  const setRelationForFile = (fileName, col) => {
-    setRelations((prev) => ({ ...prev, [fileName]: col }));
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-purple-200 font-inter p-6 text-gray-900">
+    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-purple-200 p-6">
       <header className="text-center my-4">
         <a href="https://www.klinosinsight.com" target="_blank" rel="noopener noreferrer" className="text-4xl font-bold text-blue-800 hover:underline">
           Klinos Insight
         </a>
-        <p className="mt-2 text-gray-700">Automação inteligente: menos tempo em tarefas, mais tempo em resultados.</p>
+        <p className="mt-2 text-gray-700">
+          Automação inteligente: menos tempo em tarefas, mais tempo em resultados.
+        </p>
       </header>
 
       <section className="flex flex-col md:flex-row justify-center gap-6 mb-8">
-        {cards.map((card, idx) => (
-          <div key={idx} className="bg-gradient-to-br from-blue-400 to-purple-600 rounded-2xl p-6 flex-1 text-white hover:scale-105 transition transform text-center shadow-md">
-            <div className="text-4xl mb-3 font-bold">{card.icon}</div>
-            <h2 className="text-xl font-bold mb-2">{card.title}</h2>
-            <p className="text-sm font-bold">{card.description}</p>
+        {["⚡ Rápido", "🧩 Simples", "🔒 Seguro"].map((text, idx) => (
+          <div key={idx} className="bg-gradient-to-br from-blue-400 to-purple-600 rounded-2xl p-6 flex-1 text-white text-center shadow-md hover:scale-105 transition transform">
+            <p className="text-2xl font-bold">{text}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm">
+        <div className="p-4 border rounded bg-blue-50 mb-4">
+          <label className="text-gray-800 font-semibold mb-2 block">Carregar ficheiro</label>
+          <input type="file" multiple accept=".csv,.txt,.json,.xlsx,.pdf" onChange={handleFileUpload} />
+        </div>
+
+        {files.map((f, idx) => (
+          <div key={idx} className="mb-4 border rounded p-3 bg-white">
+            <div className="flex justify-between items-center border-b pb-2 mb-2">
+              <p className="font-semibold text-gray-800">{f.name}</p>
+              <button onClick={() => removeFile(f.name)} className="text-red-600 hover:text-red-800">🗑️</button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border-collapse">
+                <tbody>
+                  {(previews[f.name] || []).slice(0, 5).map((row, rIdx) => (
+                    <tr key={rIdx} className={rIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                      {row.map((cell, cIdx) => <td key={cIdx} className="px-2 py-1 border text-sm">{cell}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ))}
       </section>
