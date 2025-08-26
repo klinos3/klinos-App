@@ -208,7 +208,7 @@ export default function App() {
           <div key={f.name + index} className="mb-4 border rounded bg-white shadow-sm">
             <div className="flex justify-between items-center px-3 py-2 border-b">
               <p className="font-semibold text-gray-800">
-                {index + 1}. {f.name} — {f.headers.length} colunas, {f.rows.length} linhas
+                {index + 1}. {f.name} - {f.headers.length} colunas, {f.rows.length.toLocaleString()} linhas
               </p>
               <button
                 onClick={() => removeFile(f.name)}
@@ -287,7 +287,7 @@ export default function App() {
         {/* Mostrar relações de colunas */}
         {Object.keys(relations).length > 0 && (
           <div className="mt-4 p-3 bg-gray-50 rounded border">
-            <h4 className="font-semibold mb-2">Colunas relacionadas (simulação SQL):</h4>
+            <h4 className="font-semibold mb-2">Colunas relacionadas:</h4>
             <ul className="text-sm">
               {Object.entries(relations).map(([file, col], idx) => (
                 <li key={idx}>
@@ -297,6 +297,7 @@ export default function App() {
             </ul>
           </div>
         )}
+
 
         {/* Botão Serviços final da seção Relacionar colunas */}
         {filesData.length > 1 && (
