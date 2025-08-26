@@ -245,18 +245,20 @@ export default function App() {
         </tbody>
       </table>
     </div>
-
-    {/* Botão Serviços no fundo direito do retângulo */}
-    <div className="absolute bottom-4 right-4">
-      <a
-        href="/servicos"
-        className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition"
-      >
-        Serviços
-      </a>
-    </div>
   </div>
 ))}
+
+  
+))}
+    {/* Botão Serviços final da seção de pré-visualização */}
+<div className="flex justify-end mt-4">
+  <a
+    href="/servicos"
+    className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition"
+  >
+    Serviços
+  </a>
+</div>
 
         {/* Botão Serviços no fundo direito do retângulo */}
         <div className="absolute bottom-4 right-4">
@@ -293,6 +295,13 @@ export default function App() {
             Carregue pelo menos 2 ficheiros para relacionar colunas.
           </p>
         )}
+        {/* Mostrar relações em estilo SQL */}
+{Object.keys(relations).length > 0 && (
+  <div className="mt-4 p-3 bg-gray-50 rounded border">
+    <h4 className="font-semibold mb-2">Colunas relacionadas (simulação SQL):</h4>
+    <pre className="text-sm">{JSON.stringify(relations, null, 2)}</pre>
+  </div>
+)}
 
         {/* Botão Serviços no fundo direito do retângulo */}
         <div className="absolute bottom-4 right-4">
