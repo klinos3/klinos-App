@@ -26,10 +26,6 @@ export default function App() {
   const [filesData, setFilesData] = useState([]);
   const [relations, setRelations] = useState({});
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const files = e.target.files;
-  if (!files) return;
-
   Array.from(files).forEach((file) => {
     const reader = new FileReader(); // ✅ aqui declaramos o reader
 
@@ -122,7 +118,7 @@ export default function App() {
         })
     );
   reader.onload = (event) => {
-  const text = event.target.result as string;
+  const text = event.target.result;
   const rows = text.split("\n").map((r) => r.split(","));
   const headers = rows.shift();
 
