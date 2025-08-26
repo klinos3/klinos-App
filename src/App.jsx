@@ -248,18 +248,6 @@ export default function App() {
   </div>
 ))}
 
-  
-))}
-    {/* Botão Serviços final da seção de pré-visualização */}
-<div className="flex justify-end mt-4">
-  <a
-    href="/servicos"
-    className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition"
-  >
-    Serviços
-  </a>
-</div>
-
         {/* Botão Serviços no fundo direito do retângulo */}
         <div className="absolute bottom-4 right-4">
           <a
