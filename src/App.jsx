@@ -119,15 +119,14 @@ export default function App() {
   return (
     <div className="min-h-screen p-6 bg-gradient-to-b from-blue-100 to-purple-100">
       {/* Top bar: menus à direita */}
-<div className="flex justify-end p-3 mb-4 bg-white rounded-xl shadow-md">
-  <nav className="flex gap-4 text-sm">
-    <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Início</a>
-    <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Serviços</a>
-    <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Pagamento</a>
-    <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Resultado</a>
-  </nav>
-</div>
-
+      <div className="flex justify-end p-3 mb-4 bg-white rounded-xl shadow-md">
+        <nav className="flex gap-4 text-sm">
+          <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Início</a>
+          <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Serviços</a>
+          <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Pagamento</a>
+          <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Resultado</a>
+        </nav>
+      </div>
 
       {/* Nome + frase */}
       <header className="text-center my-4">
@@ -159,108 +158,109 @@ export default function App() {
       </section>
 
       {/* Área principal: pré-visualizar */}
-      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm relative">
-        {/* JSON / Upload */}
-        {/* Mantém todo o código existente */}
-      {/* Colar/editar JSON */}
-<div className="p-3 border rounded mb-4 bg-purple-50">
-  <label className="text-gray-800 font-semibold">Colar ou editar JSON</label>
-  <textarea
-    value={jsonInput}
-    onChange={(e) => setJsonInput(e.target.value)}
-    placeholder="Cole aqui o JSON"
-    className="w-full p-2 mt-2 rounded h-16 text-gray-800"
-  />
-</div>
-
-{/* Upload de ficheiros */}
-<div className="p-4 border rounded bg-blue-50 mb-4">
-  <div className="flex items-center justify-between flex-wrap gap-3">
-    <div>
-      <div className="text-gray-800 font-semibold text-lg">
-        Carregar ficheiro{" "}
-        <span className="text-sm font-normal">
-          - .csv, .txt, .json, .xlsx, .pdf
-        </span>
-      </div>
-      <input
-        type="file"
-        multiple
-        accept=".csv,.txt,.json,.xlsx,.pdf"
-        onChange={handleFileUpload}
-        className="mt-2"
-      />
-    </div>
-    <div className="flex gap-2">
-      <button
-        onClick={removeAll}
-        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
-      >
-        Apagar todos
-      </button>
-    </div>
-  </div>
-
-  {filesData.length === 0 && (
-    <p className="text-gray-800 italic mt-3">Nenhum ficheiro selecionado</p>
-  )}
-</div>
-{/* Lista de ficheiros */}
-{filesData.map((f, index) => (
-  <div key={f.name + index} className="mb-4 border rounded bg-white shadow-sm relative">
-    <div className="flex justify-between items-center px-3 py-2 border-b">
-      <p className="font-semibold text-gray-800">
-        Ficheiro {index + 1}: {f.name} — {f.headers.length} colunas, {f.rows.length} linhas
-      </p>
-      <button
-        onClick={() => removeFile(f.name)}
-        className="text-red-600 hover:text-red-800"
-        title="Apagar este ficheiro"
-      >
-        🗑️
-      </button>
-    </div>
-
-    <div className="overflow-x-auto p-3">
-      <table className="min-w-full text-left border-collapse">
-        <thead>
-          <tr className="bg-gray-100">
-            {f.headers.map((h, i) => (
-              <th key={i} className="px-2 py-1 border text-sm whitespace-nowrap">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {f.rows.slice(0, 5).map((row, rIdx) => (
-            <tr key={rIdx} className={rIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-              {row.map((cell, cIdx) => (
-                <td key={cIdx} className="px-2 py-1 border text-sm whitespace-nowrap">
-                  {String(cell ?? "")}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-))}
-
-        {/* Botão Serviços no fundo direito do retângulo */}
-        <div className="absolute bottom-4 right-4">
-          <a
-            href="/servicos"
-            className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition"
-          >
-            Serviços
-          </a>
+      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm">
+        {/* Colar/editar JSON */}
+        <div className="p-3 border rounded mb-4 bg-purple-50">
+          <label className="text-gray-800 font-semibold">Colar ou editar JSON</label>
+          <textarea
+            value={jsonInput}
+            onChange={(e) => setJsonInput(e.target.value)}
+            placeholder="Cole aqui o JSON"
+            className="w-full p-2 mt-2 rounded h-16 text-gray-800"
+          />
         </div>
+
+        {/* Upload de ficheiros */}
+        <div className="p-4 border rounded bg-blue-50 mb-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <div className="text-gray-800 font-semibold text-lg">
+                Carregar ficheiro{" "}
+                <span className="text-sm font-normal">
+                  - .csv, .txt, .json, .xlsx, .pdf
+                </span>
+              </div>
+              <input
+                type="file"
+                multiple
+                accept=".csv,.txt,.json,.xlsx,.pdf"
+                onChange={handleFileUpload}
+                className="mt-2"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={removeAll}
+                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+              >
+                Apagar todos
+              </button>
+            </div>
+          </div>
+
+          {filesData.length === 0 && (
+            <p className="text-gray-800 italic mt-3">Nenhum ficheiro selecionado</p>
+          )}
+        </div>
+
+        {/* Lista de ficheiros */}
+        {filesData.map((f, index) => (
+          <div key={f.name + index} className="mb-4 border rounded bg-white shadow-sm">
+            <div className="flex justify-between items-center px-3 py-2 border-b">
+              <p className="font-semibold text-gray-800">
+                {index + 1}. {f.name} — {f.headers.length} colunas, {f.rows.length} linhas
+              </p>
+              <button
+                onClick={() => removeFile(f.name)}
+                className="text-red-600 hover:text-red-800"
+                title="Apagar este ficheiro"
+              >
+                🗑️
+              </button>
+            </div>
+
+            <div className="overflow-x-auto p-3">
+              <table className="min-w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    {f.headers.map((h, i) => (
+                      <th key={i} className="px-2 py-1 border text-sm whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {f.rows.slice(0, 5).map((row, rIdx) => (
+                    <tr key={rIdx} className={rIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                      {row.map((cell, cIdx) => (
+                        <td key={cIdx} className="px-2 py-1 border text-sm whitespace-nowrap">
+                          {String(cell ?? "")}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+
+        {/* Botão Serviços final da seção de pré-visualização */}
+        {filesData.length > 0 && (
+          <div className="flex justify-end mt-4">
+            <a
+              href="/servicos"
+              className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition"
+            >
+              Serviços
+            </a>
+          </div>
+        )}
       </section>
 
       {/* Relacionar colunas */}
-      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm relative">
+      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm">
         <h3 className="text-xl font-semibold mb-4">Relacionar colunas</h3>
         {filesData.length > 1 ? (
           filesData.map((file) => (
@@ -283,30 +283,38 @@ export default function App() {
             Carregue pelo menos 2 ficheiros para relacionar colunas.
           </p>
         )}
-        {/* Mostrar relações em estilo SQL */}
-{Object.keys(relations).length > 0 && (
-  <div className="mt-4 p-3 bg-gray-50 rounded border">
-    <h4 className="font-semibold mb-2">Colunas relacionadas (simulação SQL):</h4>
-    <pre className="text-sm">{JSON.stringify(relations, null, 2)}</pre>
-  </div>
-)}
 
-        {/* Botão Serviços no fundo direito do retângulo */}
-        <div className="absolute bottom-4 right-4">
-          <a
-            href="/servicos"
-            className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition"
-          >
-            Serviços
-          </a>
-        </div>
+        {/* Mostrar relações de colunas */}
+        {Object.keys(relations).length > 0 && (
+          <div className="mt-4 p-3 bg-gray-50 rounded border">
+            <h4 className="font-semibold mb-2">Colunas relacionadas (simulação SQL):</h4>
+            <ul className="text-sm">
+              {Object.entries(relations).map(([file, col], idx) => (
+                <li key={idx}>
+                  <strong>{file}</strong> → {col || "nenhuma coluna escolhida"}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Botão Serviços final da seção Relacionar colunas */}
+        {filesData.length > 1 && (
+          <div className="flex justify-end mt-4">
+            <a
+              href="/servicos"
+              className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition"
+            >
+              Serviços
+            </a>
+          </div>
+        )}
       </section>
 
       {/* Rodapé */}
       <footer className="text-center text-gray-600 py-2 text-[10px]">
-  2025 Klinos Insight. Todos os direitos reservados.
-</footer>
-
+        2025 Klinos Insight. Todos os direitos reservados.
+      </footer>
     </div>
   );
 }
