@@ -26,6 +26,35 @@ export default function App() {
   const [filesData, setFilesData] = useState([]);
   const [relations, setRelations] = useState({});
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const files = e.target.files;
+  if (!files) return;
+
+  Array.from(files).forEach((file) => {
+    const reader = new FileReader(); // ✅ aqui declaramos o reader
+
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const rows = text.split("\n").map((r) => r.split(","));
+      const headers = rows.shift();
+
+      // ✅ agora criamos o objeto já com nome do ficheiro
+      const parsed = [{
+        name: file.name,   // ex: vendas.csv
+        headers,
+        rows,
+      }];
+
+      // ✅ guardamos no state
+      setFilesData((prev) => [...prev, ...parsed]);
+
+      e.target.value = "";
+    };
+
+    reader.readAsText(file); // ✅ lê o ficheiro
+  });
+};
+
   // Funções de parse CSV / JSON / TXT
   const parseCSV = (text) => {
     const lines = text.split(/\r\n|\n/).filter((l) => l.length);
@@ -92,20 +121,23 @@ export default function App() {
           });
         })
     );
+  reader.onload = (event) => {
+  const text = event.target.result as string;
+  const rows = text.split("\n").map((r) => r.split(","));
+  const headers = rows.shift();
 
-    const parsed = await Promise.all(readers);
-    setFilesData((prev) => [...prev, ...parsed]);
-    e.target.value = "";
-  };
+  // ✅ agora criamos o objeto completo já com o nome do ficheiro
+  const parsed = [{
+    name: file.name,   // inclui o nome do ficheiro (ex: vendas.csv)
+    headers,
+    rows,
+  }];
 
-  const removeFile = (name) => {
-    setFilesData((prev) => prev.filter((f) => f.name !== name));
-    setRelations((prev) => {
-      const copy = { ...prev };
-      delete copy[name];
-      return copy;
-    });
-  };
+  // ✅ e usamos o parsed no state
+  setFilesData((prev) => [...prev, ...parsed]);
+
+  e.target.value = "";
+};
 
   const removeAll = () => {
     setFilesData([]);
