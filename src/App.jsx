@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 
+// Cards de dashboards
 const cards = [
   {
     icon: "⚡",
@@ -22,14 +23,30 @@ const cards = [
 ];
 
 export default function App() {
+  // Estados principais
   const [jsonInput, setJsonInput] = useState("");
+  const [jsonExpanded, setJsonExpanded] = useState(false);
   const [filesData, setFilesData] = useState([]);
   const [relations, setRelations] = useState({});
+  const [uploadMessage, setUploadMessage] = useState("Nenhum ficheiro selecionado");
 
-  // Função de upload de ficheiros
+  const validExtensions = [".csv", ".txt", ".json", ".xlsx", ".pdf"];
+
+  // Função de upload
   const handleFileUpload = async (e) => {
     const selected = Array.from(e.target.files || []);
     if (!selected.length) return;
+
+    // Verificar ficheiros não suportados
+    const invalidFile = selected.find(
+      (f) => !validExtensions.some((ext) => f.name.toLowerCase().endsWith(ext))
+    );
+    if (invalidFile) {
+      setUploadMessage("Ficheiro não suportado");
+      return;
+    }
+
+    setUploadMessage(""); // limpar mensagem se ficheiros válidos
 
     const readers = selected.map(
       (file) =>
@@ -55,18 +72,30 @@ export default function App() {
                 const rows = data.map((row) => headers.map((h) => String(row[h] ?? "")));
                 resolve({ name, headers, rows });
               } catch {
-                resolve({ name, headers: ["Conteúdo"], rows: text.split(/\r\n|\n/).map((l) => [l]) });
+                resolve({
+                  name,
+                  headers: ["Conteúdo"],
+                  rows: text.split(/\r\n|\n/).map((l) => [l]),
+                });
               }
               return;
             }
 
             if (name.toLowerCase().endsWith(".txt")) {
-              resolve({ name, headers: ["Conteúdo"], rows: text.split(/\r\n|\n/).map((l) => [l]) });
+              resolve({
+                name,
+                headers: ["Conteúdo"],
+                rows: text.split(/\r\n|\n/).map((l) => [l]),
+              });
               return;
             }
 
-            // Placeholder para XLSX/PDF
-            resolve({ name, headers: ["Aviso"], rows: [["Pré-visualização será ativada na próxima etapa."]] });
+            // XLSX e PDF - placeholder
+            resolve({
+              name,
+              headers: ["Aviso"],
+              rows: [["Pré-visualização será ativada na próxima etapa."]],
+            });
           };
 
           reader.readAsText(file);
@@ -78,6 +107,7 @@ export default function App() {
     e.target.value = "";
   };
 
+  // Remover ficheiro
   const removeFile = (name) => {
     setFilesData((prev) => prev.filter((f) => f.name !== name));
     setRelations((prev) => {
@@ -87,21 +117,42 @@ export default function App() {
     });
   };
 
+  // Remover todos
   const removeAll = () => {
     setFilesData([]);
     setRelations({});
+    setUploadMessage("Nenhum ficheiro selecionado");
   };
 
+  // Relacionar colunas manualmente
   const setRelationForFile = (fileName, col) => {
     setRelations((prev) => ({ ...prev, [fileName]: col }));
   };
 
+  // Relacionamento automático (primeira coluna comum)
+  const autoRelateFiles = () => {
+    if (filesData.length < 2) return;
+    const baseFile = filesData[0];
+    const newRelations = {};
+    filesData.slice(1).forEach((file) => {
+      const commonCols = baseFile.headers.filter((h) => file.headers.includes(h));
+      if (commonCols.length) newRelations[file.name] = commonCols[0];
+    });
+    setRelations(newRelations);
+  };
+
   return (
-    <div className="min-h-screen relative" style={{ 
-      background: "linear-gradient(to bottom, #ADD8FF, #A3E4B2, #C9A0FF)" 
-    }}>
+    <div className="min-h-screen bg-gradient-to-b from-blue-200 via-green-100 to-purple-200 p-6">
       {/* Top bar */}
-      <div className="flex justify-end p-3 shadow-md bg-white rounded-b-xl">
+      <div className="flex justify-between items-center p-3 shadow-md bg-white rounded-b-xl mb-6">
+        <a
+          href="https://www.klinosinsight.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xl font-bold text-brandBlue hover:underline"
+        >
+          Klinos Insight
+        </a>
         <nav className="flex gap-4 text-sm">
           <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Início</a>
           <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Serviços</a>
@@ -110,15 +161,15 @@ export default function App() {
         </nav>
       </div>
 
-      {/* Logo e frase */}
-      <header className="text-center my-6">
+      {/* Header central */}
+      <header className="text-center my-4">
         <a
           href="https://www.klinosinsight.com"
           target="_blank"
           rel="noopener noreferrer"
           className="text-4xl font-bold text-brandBlue hover:underline"
         >
-          Klinos Insight
+          Klinos Insight - App
         </a>
         <p className="mt-2 text-gray-700 text-base">
           <strong>Automação inteligente:</strong> menos tempo em tarefas, mais tempo em resultados.
@@ -126,60 +177,71 @@ export default function App() {
       </header>
 
       {/* Dashboards */}
-      <section className="flex flex-col md:flex-row justify-center gap-6 mb-8 px-4">
+      <section className="flex flex-col md:flex-row justify-center gap-6 mb-8">
         {cards.map((card, idx) => (
           <div
             key={idx}
-            className="rounded-2xl p-6 flex-1 text-white text-center shadow-md transform transition hover:scale-105"
-            style={{ background: "linear-gradient(to bottom left, #3B82F6, #9333EA)" }}
+            className="bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl p-6 flex-1 text-white text-center shadow-md transform transition hover:scale-105"
           >
             <div className="text-4xl mb-3 font-bold">{card.icon}</div>
             <h2 className="text-2xl font-bold mb-2">{card.title}</h2>
-            <p className="text-base">{card.description}</p>
+            <p className="text-sm">{card.description}</p>
           </div>
         ))}
       </section>
 
-      {/* JSON e upload */}
-      <section className="max-w-5xl mx-auto mb-10 px-4">
-        <div className="mb-4 bg-purple-50 rounded-xl p-4">
-          <label className="text-gray-800 font-semibold">Colar ou editar JSON</label>
-          <textarea
-            value={jsonInput}
-            onChange={(e) => setJsonInput(e.target.value)}
-            placeholder="Cole aqui o JSON"
-            className="w-full p-2 mt-2 rounded h-24 text-gray-800"
-          />
-        </div>
-
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1 bg-blue-50 rounded-xl p-4">
-            <label className="text-gray-800 font-semibold text-lg">Carregar ficheiro - .csv, .txt, .json, .xlsx, .pdf</label>
-            <input
-              type="file"
-              multiple
-              accept=".csv,.txt,.json,.xlsx,.pdf"
-              onChange={handleFileUpload}
-              className="mt-2"
+      {/* Área JSON + Upload */}
+      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm">
+        {/* JSON expansível */}
+        <div className="mb-4 flex gap-2">
+          <div className="flex-1 bg-purple-50 p-3 rounded-xl">
+            <label className="font-semibold text-gray-800">Colar ou editar JSON</label>
+            <textarea
+              value={jsonInput}
+              onChange={(e) => setJsonInput(e.target.value)}
+              placeholder="Cole aqui o JSON"
+              className="w-full p-2 mt-2 rounded text-gray-800 transition-all duration-300"
+              style={{ height: jsonExpanded ? "300px" : "100px" }}
             />
           </div>
-          <div className="flex items-end">
-            <button
-              onClick={removeAll}
-              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
-            >
-              Apagar todos
-            </button>
+          <button
+            onClick={() => setJsonExpanded(!jsonExpanded)}
+            className="self-start bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
+          >
+            {jsonExpanded ? "Reduzir" : "Expandir"}
+          </button>
+        </div>
+
+        {/* Upload de ficheiros */}
+        <div className="p-4 border rounded bg-blue-50 mb-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            <div>
+              <div className="text-gray-800 font-semibold text-lg">
+                Carregar ficheiro - .csv, .txt, .json, .xlsx, .pdf
+              </div>
+              <input
+                type="file"
+                multiple
+                accept=".csv,.txt,.json,.xlsx,.pdf"
+                onChange={handleFileUpload}
+                className="mt-2"
+              />
+              <p className="text-gray-800 italic mt-2">{uploadMessage}</p>
+            </div>
+            <div className="flex gap-2 mt-2 md:mt-0">
+              <button
+                onClick={removeAll}
+                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+              >
+                Apagar todos
+              </button>
+            </div>
           </div>
         </div>
 
-        {filesData.length === 0 && (
-          <p className="text-gray-800 italic mt-3">Nenhum ficheiro selecionado</p>
-        )}
-
-        {/* Pré-visualização */}
+        {/* Lista de ficheiros carregados */}
         {filesData.map((f, idx) => (
-          <div key={f.name + idx} className="mb-4 border rounded-xl bg-white shadow-sm">
+          <div key={f.name + idx} className="mb-4 border rounded bg-white shadow-sm">
             <div className="flex justify-between items-center px-3 py-2 border-b">
               <p className="font-semibold text-gray-800">
                 {idx + 1}. {f.name} - {f.headers.length} colunas, {f.rows.length.toLocaleString()} linhas
@@ -187,7 +249,6 @@ export default function App() {
               <button
                 onClick={() => removeFile(f.name)}
                 className="text-red-600 hover:text-red-800"
-                title="Apagar este ficheiro"
               >
                 🗑️
               </button>
@@ -219,8 +280,14 @@ export default function App() {
       </section>
 
       {/* Relacionar colunas */}
-      <section className="max-w-5xl mx-auto mb-20 px-4">
+      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm">
         <h3 className="text-xl font-semibold mb-4">Relacionar colunas</h3>
+        <button
+          onClick={autoRelateFiles}
+          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition mb-3"
+        >
+          Relacionar automaticamente
+        </button>
         {filesData.length > 1 ? (
           filesData.map((file) => (
             <div key={file.name} className="mb-3">
@@ -240,28 +307,31 @@ export default function App() {
         ) : (
           <p className="text-gray-600 italic">Carregue pelo menos 2 ficheiros para relacionar colunas.</p>
         )}
+
         {Object.keys(relations).length > 0 && (
           <div className="mt-4 p-3 bg-gray-50 rounded border">
             <h4 className="font-semibold mb-2">Colunas relacionadas:</h4>
             <ul className="text-sm">
               {Object.entries(relations).map(([file, col], idx) => (
-                <li key={idx}><strong>{file}</strong> → {col || "nenhuma coluna escolhida"}</li>
+                <li key={idx}>
+                  <strong>{file}</strong> → {col || "nenhuma coluna escolhida"}
+                </li>
               ))}
             </ul>
           </div>
         )}
       </section>
 
-      {/* Botão Serviços sempre visível no fundo direito */}
+      {/* Botão Serviços sempre visível no canto inferior direito */}
       <a
         href="/servicos"
-        className="fixed bottom-4 right-4 bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition z-50"
+        className="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition shadow-lg"
       >
         Serviços
       </a>
 
-      {/* Footer */}
-      <footer className="text-center text-gray-600 py-2 text-[10px]">
+      {/* Rodapé */}
+      <footer className="text-center text-gray-600 py-2 text-[10px] mt-20">
         2025 Klinos Insight. Todos os direitos reservados.
       </footer>
     </div>
