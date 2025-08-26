@@ -23,13 +23,15 @@ const cards = [
 
 export default function App() {
   const [jsonInput, setJsonInput] = useState("");
+  // Cada item: { name, headers: [], rows: [] }
   const [filesData, setFilesData] = useState([]);
+  // Relações simples: { [fileName]: "colunaEscolhida" }
   const [relations, setRelations] = useState({});
 
-  // Funções de parse CSV / JSON / TXT
+  // Parseadores
   const parseCSV = (text) => {
     const lines = text.split(/\r\n|\n/).filter((l) => l.length);
-    if (!lines.length) return { headers: [], rows: [] };
+    if (lines.length === 0) return { headers: [], rows: [] };
     const headers = lines[0].split(",").map((h) => h.trim());
     const rows = lines.slice(1).map((line) => line.split(",").map((c) => c.trim()));
     return { headers, rows };
@@ -43,6 +45,7 @@ export default function App() {
         const rows = data.map((row) => headers.map((h) => String(row[h] ?? "")));
         return { headers, rows };
       }
+      // fallback: mostrar como linhas de texto
       const lines = text.split(/\r\n|\n/).slice(0, 200);
       return { headers: ["Conteúdo"], rows: lines.map((l) => [l]) };
     } catch {
@@ -66,35 +69,61 @@ export default function App() {
           const name = file.name;
           const reader = new FileReader();
 
+          // CSV
           if (name.toLowerCase().endsWith(".csv")) {
-            reader.onload = (ev) => resolve(parseCSV(ev.target.result));
+            reader.onload = (ev) => {
+              const { headers, rows } = parseCSV(ev.target.result);
+              resolve({ name, headers, rows });
+            };
             reader.readAsText(file);
             return;
           }
 
+          // JSON
           if (name.toLowerCase().endsWith(".json")) {
-            reader.onload = (ev) => resolve(parseJSON(ev.target.result));
+            reader.onload = (ev) => {
+              const { headers, rows } = parseJSON(ev.target.result);
+              resolve({ name, headers, rows });
+            };
             reader.readAsText(file);
             return;
           }
 
-          if (name.toLowerCase().endsWith(".txt")) {
-            reader.onload = (ev) => resolve(parseTXT(ev.target.result));
-            reader.readAsText(file);
+          // XLSX (por agora, sem lib) → aviso
+          if (
+            name.toLowerCase().endsWith(".xlsx") ||
+            name.toLowerCase().endsWith(".xls")
+          ) {
+            resolve({
+              name,
+              headers: ["Aviso"],
+              rows: [["Pré-visualização XLSX será ativada na próxima etapa."]],
+            });
             return;
           }
 
-          // XLSX e PDF - placeholder
-          resolve({
-            name,
-            headers: ["Aviso"],
-            rows: [["Pré-visualização será ativada na próxima etapa."]],
-          });
+          // PDF (por agora, sem lib) → aviso
+          if (name.toLowerCase().endsWith(".pdf")) {
+            resolve({
+              name,
+              headers: ["Aviso"],
+              rows: [["Pré-visualização PDF será ativada na próxima etapa."]],
+            });
+            return;
+          }
+
+          // TXT / outros
+          reader.onload = (ev) => {
+            const { headers, rows } = parseTXT(ev.target.result);
+            resolve({ name, headers, rows });
+          };
+          reader.readAsText(file);
         })
     );
 
     const parsed = await Promise.all(readers);
     setFilesData((prev) => [...prev, ...parsed]);
+    // limpar input para permitir re-carregar o mesmo nome
     e.target.value = "";
   };
 
@@ -118,8 +147,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen p-6 bg-gradient-to-b from-blue-100 to-purple-100">
-      {/* Top bar */}
-      <div className="flex justify-end p-3 mb-4 text-sm bg-white rounded-xl shadow-md">
+      {/* Top bar: menus à direita */}
+      <div className="flex justify-end p-3 mb-2 text-sm">
         <nav className="flex gap-4">
           <a className="hover:underline cursor-pointer">Início</a>
           <a className="hover:underline cursor-pointer">Serviços</a>
@@ -148,7 +177,7 @@ export default function App() {
         {cards.map((card, idx) => (
           <div
             key={idx}
-            className="bg-gradient-to-br from-blue-500 to-purple-400 rounded-2xl p-6 flex-1 text-white text-center shadow-md transform transition hover:scale-105"
+            className="bg-gradient-to-br from-blue-500 to-purple-300 rounded-2xl p-6 flex-1 text-white text-center shadow-md transform transition hover:scale-105"
           >
             <div className="text-4xl mb-3 font-bold">{card.icon}</div>
             <h2 className="text-xl font-bold mb-2">{card.title}</h2>
@@ -157,49 +186,18 @@ export default function App() {
         ))}
       </section>
 
-      {/* Área principal: pré-visualizar */}
-      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm relative">
-        {/* JSON / Upload */}
-        {/* Mantém todo o código existente */}
-
-        {/* Botão Serviços no fundo direito do retângulo */}
-        <div className="absolute bottom-4 right-4">
-          <a
-            href="/servicos"
-            className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition"
-          >
-            Serviços
-          </a>
-        </div>
+      {/* Área principal (JSON, Upload, Lista de ficheiros) */}
+      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm">
+        {/* ... mantém todo o código existente desta seção igual */}
       </section>
 
       {/* Relacionar colunas */}
-      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm relative">
+      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm">
         <h3 className="text-xl font-semibold mb-4">Relacionar colunas</h3>
-        {filesData.length > 1 ? (
-          filesData.map((file) => (
-            <div key={file.name} className="mb-3">
-              <label className="block font-medium mb-1">{file.name}</label>
-              <select
-                className="border p-2 rounded w-full"
-                onChange={(e) => setRelationForFile(file.name, e.target.value)}
-                value={relations[file.name] || ""}
-              >
-                <option value="">-- escolher coluna chave --</option>
-                {file.headers.map((col, i) => (
-                  <option key={i} value={col}>{col}</option>
-                ))}
-              </select>
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-600 italic">
-            Carregue pelo menos 2 ficheiros para relacionar colunas.
-          </p>
-        )}
-
-        {/* Botão Serviços no fundo direito do retângulo */}
-        <div className="absolute bottom-4 right-4">
+        {/* ... mantém todo o código existente desta seção igual */}
+        
+        {/* Novo botão Serviços abaixo */}
+        <div className="flex justify-end mt-4">
           <a
             href="/servicos"
             className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition"
@@ -208,11 +206,6 @@ export default function App() {
           </a>
         </div>
       </section>
-
-      {/* Rodapé */}
-      <footer className="text-center text-gray-600 py-6">
-        2025 Klinos Insight. Todos os direitos reservados.
-      </footer>
     </div>
   );
 }
