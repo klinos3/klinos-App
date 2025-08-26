@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Slightly larger base font (makes the whole UI a bit larger) */
+html { font-size: 18px; }
+
+/* Use Inter as default */
 body {
-  @apply bg-klinosBlue text-white font-sans;
+  @apply font-inter;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  color: #0f172a;
 }
+
+/* Small helpers */
+textarea { resize: vertical; }

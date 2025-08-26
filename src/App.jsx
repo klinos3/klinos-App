@@ -1,63 +1,71 @@
 import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
-function App() {
+export default function App() {
   const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState("");
 
-  const handleFileChange = (e) => {
-    const uploadedFile = e.target.files[0];
-    setFile(uploadedFile);
-
-    if (uploadedFile && uploadedFile.type.startsWith("text")) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setPreview(ev.target.result.substring(0, 500)); // pré-visualizar primeiras 500 chars
-      };
-      reader.readAsText(uploadedFile);
-    } else {
-      setPreview("Pré-visualização disponível apenas para ficheiros de texto.");
-    }
+  const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6">
-      <header className="mb-12 text-center">
-        <h1 className="text-4xl font-bold text-klinosGreen">Klinos Insight</h1>
-        <p className="text-gray-200 mt-2">Upload e Análise de Ficheiros</p>
+    <div className="min-h-screen bg-gradient-to-b from-blue-100 via-blue-200 to-purple-200 text-gray-900 text-[16px]">
+      {/* Header */}
+      <header className="p-6 shadow-md bg-white/70 backdrop-blur-md">
+        <h1 className="text-2xl font-bold text-center text-gray-800">
+          Klinos Insight – Dashboard Inteligente
+        </h1>
       </header>
 
-      <main className="bg-white text-black shadow-xl rounded-2xl p-8 w-full max-w-2xl">
-        <h2 className="text-2xl font-semibold mb-6 text-klinosBlue">1. Carregar Ficheiro</h2>
-        <input
-          type="file"
-          accept=".csv,.txt,.json,.xlsx,.pdf"
-          onChange={handleFileChange}
-          className="mb-6 block w-full border border-gray-300 rounded-lg p-2"
-        />
+      {/* Main Section */}
+      <main className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Left Panel */}
+        <section>
+          <Card className="shadow-lg rounded-2xl bg-white/80">
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Carregar Ficheiros</h2>
+              <input
+                type="file"
+                accept=".csv,.txt,.json,.xlsx,.pdf"
+                onChange={handleFileChange}
+                className="mb-4"
+              />
+              {file && (
+                <p className="text-sm text-gray-700">
+                  Ficheiro selecionado: <span className="font-medium">{file.name}</span>
+                </p>
+              )}
+              <Button className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white">
+                Analisar Ficheiro
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
 
-        {file && (
-          <div>
-            <h3 className="text-lg font-bold text-klinosGreen mb-2">Detalhes:</h3>
-            <p><strong>Nome:</strong> {file.name}</p>
-            <p><strong>Tamanho:</strong> {(file.size / 1024).toFixed(2)} KB</p>
-          </div>
-        )}
+        {/* Right Panel */}
+        <section className="flex flex-col gap-6">
+          {/* Card de relacionar colunas */}
+          <Card className="shadow-lg rounded-2xl bg-white/80">
+            <CardContent className="p-6 flex flex-col">
+              <h2 className="text-xl font-semibold mb-4">Relacionar Colunas</h2>
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                Abrir Relacionamento
+              </Button>
+            </CardContent>
+          </Card>
 
-        {preview && (
-          <div className="mt-6">
-            <h3 className="text-lg font-bold text-klinosGreen mb-2">Pré-visualização:</h3>
-            <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
-              {preview}
-            </pre>
+          {/* Botão Serviços abaixo */}
+          <div className="flex justify-end">
+            <Button
+              onClick={() => (window.location.href = "/servicos")}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl shadow-md"
+            >
+              Serviços
+            </Button>
           </div>
-        )}
+        </section>
       </main>
-
-      <footer className="mt-12 text-gray-300 text-sm">
-        © 2025 Klinos Insight
-      </footer>
     </div>
   );
 }
-
-export default App;
