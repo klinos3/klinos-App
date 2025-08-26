@@ -1,72 +1,47 @@
-import React, { useState } from "react";
-import { Button } from "./components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import React from "react";
 
-export default function App() {
-  const [file, setFile] = useState(null);
-
-  const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
-  };
-
+function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-100 via-blue-200 to-purple-200 text-gray-900 text-[16px]">
-      {/* Header */}
-      <header className="p-6 shadow-md bg-white/70 backdrop-blur-md">
-        <h1 className="text-2xl font-bold text-center text-gray-800">
-          Klinos Insight – Dashboard Inteligente
-        </h1>
+    <div className="min-h-screen bg-gradient-to-b from-blue-200 to-purple-200 font-sans text-gray-900">
+      {/* Cabeçalho */}
+      <header className="p-6 bg-blue-300 shadow-md text-center">
+        <h1 className="text-2xl font-semibold">Klinos Insight</h1>
+        <p className="mt-2 text-lg">Análise e visualização de dados simplificada</p>
       </header>
 
-      {/* Main Section */}
-      <main className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Left Panel */}
-        <section>
-          <Card className="shadow-lg rounded-2xl bg-white/80">
-            <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Carregar Ficheiros</h2>
-              <input
-                type="file"
-                accept=".csv,.txt,.json,.xlsx,.pdf"
-                onChange={handleFileChange}
-                className="mb-4"
-              />
-              {file && (
-                <p className="text-sm text-gray-700">
-                  Ficheiro selecionado:{" "}
-                  <span className="font-medium">{file.name}</span>
-                </p>
-              )}
-              <Button className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white">
-                Analisar Ficheiro
-              </Button>
-            </CardContent>
-          </Card>
+      {/* Conteúdo principal */}
+      <main className="p-6 max-w-6xl mx-auto space-y-8">
+        {/* Seção de carregar ficheiros */}
+        <section className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Carregar ficheiros</h2>
+          <p className="mb-2">
+            Suporta CSV, XLSX, PDF, JSON e TXT. Pré-visualize e edite os dados.
+          </p>
+          <input
+            type="file"
+            accept=".csv, .xlsx, .pdf, .json, .txt"
+            className="border p-2 rounded-md w-full"
+          />
         </section>
 
-        {/* Right Panel */}
-        <section className="flex flex-col gap-6">
-          {/* Card de relacionar colunas */}
-          <Card className="shadow-lg rounded-2xl bg-white/80">
-            <CardContent className="p-6 flex flex-col">
-              <h2 className="text-xl font-semibold mb-4">Relacionar Colunas</h2>
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                Abrir Relacionamento
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Botão Serviços abaixo */}
-          <div className="flex justify-end">
-            <Button
-              onClick={() => (window.location.href = "/servicos")}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl shadow-md"
-            >
+        {/* Seção relacionar colunas */}
+        <section className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Relacionar colunas</h2>
+          <p>Defina relações entre colunas para análises detalhadas.</p>
+          <div className="mt-4 flex justify-end">
+            <button className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600">
               Serviços
-            </Button>
+            </button>
           </div>
         </section>
       </main>
+
+      {/* Rodapé */}
+      <footer className="p-6 bg-blue-300 text-center">
+        <p className="text-sm">© 2025 Klinos Insight. Todos os direitos reservados.</p>
+      </footer>
     </div>
   );
 }
+
+export default App;
