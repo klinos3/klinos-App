@@ -25,31 +25,13 @@ export default function App() {
   const [jsonInput, setJsonInput] = useState("");
   const [filesData, setFilesData] = useState([]);
   const [relations, setRelations] = useState({});
-
-  Array.from(files).forEach((file) => {
-    const reader = new FileReader(); // ✅ aqui declaramos o reader
-
-    reader.onload = (event) => {
-      const text = String(event.target?.result || "");
-      const rows = text.split("\n").map((r) => r.split(","));
-      const headers = rows.shift();
-
-      // ✅ agora criamos o objeto já com nome do ficheiro
-      const parsed = [{
-        name: file.name,   // ex: vendas.csv
-        headers,
-        rows,
-      }];
-
       // ✅ guardamos no state
-      setFilesData((prev) => [...prev, ...parsed]);
 
-      e.target.value = "";
-    };
-
-    reader.readAsText(file); // ✅ lê o ficheiro
-  });
+  const parsed = await Promise.all(readers);
+  setFilesData((prev) => [...prev, ...parsed]);
+  e.target.value = "";
 };
+
 
   // Funções de parse CSV / JSON / TXT
   const parseCSV = (text) => {
@@ -82,41 +64,60 @@ export default function App() {
   };
 
   const handleFileUpload = async (e) => {
-    const selected = Array.from(e.target.files || []);
-    if (!selected.length) return;
+  const selected = Array.from(e.target.files || []);
+  if (!selected.length) return;
 
-    const readers = selected.map(
-      (file) =>
-        new Promise((resolve) => {
-          const name = file.name;
-          const reader = new FileReader();
+  const readers = selected.map(
+    (file) =>
+      new Promise((resolve) => {
+        const reader = new FileReader();
+        const name = file.name;
+
+        reader.onload = (ev) => {
+          const text = ev.target.result;
 
           if (name.toLowerCase().endsWith(".csv")) {
-            reader.onload = (ev) => resolve(parseCSV(ev.target.result));
-            reader.readAsText(file);
+            const lines = text.split(/\r\n|\n/).filter((l) => l.length);
+            const headers = lines[0].split(",").map((h) => h.trim());
+            const rows = lines.slice(1).map((line) => line.split(",").map((c) => c.trim()));
+            resolve({ name, headers, rows });
             return;
           }
 
           if (name.toLowerCase().endsWith(".json")) {
-            reader.onload = (ev) => resolve(parseJSON(ev.target.result));
-            reader.readAsText(file);
+            try {
+              const data = JSON.parse(text);
+              if (Array.isArray(data) && data.length && typeof data[0] === "object") {
+                const headers = Object.keys(data[0]);
+                const rows = data.map((row) => headers.map((h) => String(row[h] ?? "")));
+                resolve({ name, headers, rows });
+              } else {
+                resolve({ name, headers: ["Conteúdo"], rows: text.split(/\r\n|\n/).map((l) => [l]) });
+              }
+            } catch {
+              resolve({ name, headers: ["Conteúdo"], rows: text.split(/\r\n|\n/).map((l) => [l]) });
+            }
             return;
           }
 
           if (name.toLowerCase().endsWith(".txt")) {
-            reader.onload = (ev) => resolve(parseTXT(ev.target.result));
-            reader.readAsText(file);
+            resolve({ name, headers: ["Conteúdo"], rows: text.split(/\r\n|\n/).map((l) => [l]) });
             return;
           }
 
           // XLSX e PDF - placeholder
-          resolve({
-            name,
-            headers: ["Aviso"],
-            rows: [["Pré-visualização será ativada na próxima etapa."]],
-          });
-        })
-    );
+          resolve({ name, headers: ["Aviso"], rows: [["Pré-visualização será ativada na próxima etapa."]] });
+        };
+
+        reader.readAsText(file);
+      })
+  );
+
+  const parsed = await Promise.all(readers);
+  setFilesData((prev) => [...prev, ...parsed]);
+  e.target.value = "";
+};
+
   reader.onload = (event) => {
   const text = event.target.result;
   const rows = text.split("\n").map((r) => r.split(","));
