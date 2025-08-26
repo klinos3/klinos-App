@@ -34,7 +34,7 @@ export default function App() {
     const reader = new FileReader(); // ✅ aqui declaramos o reader
 
     reader.onload = (event) => {
-      const text = event.target?.result as string;
+      const text = String(event.target?.result || "");
       const rows = text.split("\n").map((r) => r.split(","));
       const headers = rows.shift();
 
