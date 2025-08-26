@@ -33,7 +33,8 @@ export default function App() {
               />
               {file && (
                 <p className="text-sm text-gray-700">
-                  Ficheiro selecionado: <span className="font-medium">{file.name}</span>
+                  Ficheiro selecionado:{" "}
+                  <span className="font-medium">{file.name}</span>
                 </p>
               )}
               <Button className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white">
