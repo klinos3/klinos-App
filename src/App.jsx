@@ -1,60 +1,60 @@
 import React, { useState } from "react";
-import * as XLSX from "exceljs";
-import * as pdfjsLib from "pdfjs-dist";
 
 function App() {
-  const [fileData, setFileData] = useState(null);
+  const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
 
-  const handleFile = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const handleFileChange = (e) => {
+    const uploadedFile = e.target.files[0];
+    setFile(uploadedFile);
 
-    const fileType = file.name.split(".").pop().toLowerCase();
-
-    if (fileType === "xlsx") {
+    if (uploadedFile && uploadedFile.type.startsWith("text")) {
       const reader = new FileReader();
-      reader.onload = async (e) => {
-        const buffer = e.target.result;
-        const workbook = new XLSX.Workbook();
-        await workbook.xlsx.load(buffer);
-        const sheetNames = workbook.worksheets.map((sheet) => sheet.name);
-        setFileData({ type: "xlsx", sheets: sheetNames });
-        setPreview(`XLSX file loaded: ${sheetNames.join(", ")}`);
+      reader.onload = (ev) => {
+        setPreview(ev.target.result.substring(0, 500)); // pré-visualizar primeiras 500 chars
       };
-      reader.readAsArrayBuffer(file);
-    } else if (fileType === "pdf") {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      setFileData({ type: "pdf", pages: pdf.numPages });
-      setPreview(`PDF file loaded: ${pdf.numPages} pages`);
+      reader.readAsText(uploadedFile);
     } else {
-      setPreview("Tipo de ficheiro não suportado.");
+      setPreview("Pré-visualização disponível apenas para ficheiros de texto.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
-      <h1 className="text-3xl font-bold mb-6 text-blue-800">
-        Klinos Insight Dashboard
-      </h1>
+    <div className="min-h-screen flex flex-col items-center justify-center px-6">
+      <header className="mb-12 text-center">
+        <h1 className="text-4xl font-bold text-klinosGreen">Klinos Insight</h1>
+        <p className="text-gray-200 mt-2">Upload e Análise de Ficheiros</p>
+      </header>
 
-      <input
-        type="file"
-        accept=".xlsx,.pdf"
-        onChange={handleFile}
-        className="mb-4 p-2 border rounded"
-      />
+      <main className="bg-white text-black shadow-xl rounded-2xl p-8 w-full max-w-2xl">
+        <h2 className="text-2xl font-semibold mb-6 text-klinosBlue">1. Carregar Ficheiro</h2>
+        <input
+          type="file"
+          accept=".csv,.txt,.json,.xlsx,.pdf"
+          onChange={handleFileChange}
+          className="mb-6 block w-full border border-gray-300 rounded-lg p-2"
+        />
 
-      {preview && (
-        <div className="bg-white p-4 rounded shadow w-full max-w-lg">
-          <h2 className="font-semibold text-lg mb-2">Preview:</h2>
-          <p>{preview}</p>
-        </div>
-      )}
+        {file && (
+          <div>
+            <h3 className="text-lg font-bold text-klinosGreen mb-2">Detalhes:</h3>
+            <p><strong>Nome:</strong> {file.name}</p>
+            <p><strong>Tamanho:</strong> {(file.size / 1024).toFixed(2)} KB</p>
+          </div>
+        )}
 
-      <footer className="mt-10 text-gray-500">
-        Transforme os seus ficheiros em insights poderosos.
+        {preview && (
+          <div className="mt-6">
+            <h3 className="text-lg font-bold text-klinosGreen mb-2">Pré-visualização:</h3>
+            <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+              {preview}
+            </pre>
+          </div>
+        )}
+      </main>
+
+      <footer className="mt-12 text-gray-300 text-sm">
+        © 2025 Klinos Insight
       </footer>
     </div>
   );

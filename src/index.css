@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ajustes globais simples */
-html, body, #root {
-  height: 100%;
-}
 body {
-  @apply bg-white text-gray-900 font-inter;
+  @apply bg-klinosBlue text-white font-sans;
 }
