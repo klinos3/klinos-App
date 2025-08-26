@@ -25,116 +25,67 @@ export default function App() {
   const [jsonInput, setJsonInput] = useState("");
   const [filesData, setFilesData] = useState([]);
   const [relations, setRelations] = useState({});
-      // ✅ guardamos no state
 
-  const parsed = await Promise.all(readers);
-  setFilesData((prev) => [...prev, ...parsed]);
-  e.target.value = "";
-};
-
-
-  // Funções de parse CSV / JSON / TXT
-  const parseCSV = (text) => {
-    const lines = text.split(/\r\n|\n/).filter((l) => l.length);
-    if (!lines.length) return { headers: [], rows: [] };
-    const headers = lines[0].split(",").map((h) => h.trim());
-    const rows = lines.slice(1).map((line) => line.split(",").map((c) => c.trim()));
-    return { headers, rows };
-  };
-
-  const parseJSON = (text) => {
-    try {
-      const data = JSON.parse(text);
-      if (Array.isArray(data) && data.length && typeof data[0] === "object") {
-        const headers = Object.keys(data[0]);
-        const rows = data.map((row) => headers.map((h) => String(row[h] ?? "")));
-        return { headers, rows };
-      }
-      const lines = text.split(/\r\n|\n/).slice(0, 200);
-      return { headers: ["Conteúdo"], rows: lines.map((l) => [l]) };
-    } catch {
-      const lines = text.split(/\r\n|\n/).slice(0, 200);
-      return { headers: ["Conteúdo"], rows: lines.map((l) => [l]) };
-    }
-  };
-
-  const parseTXT = (text) => {
-    const lines = text.split(/\r\n|\n/).slice(0, 200);
-    return { headers: ["Conteúdo"], rows: lines.map((l) => [l]) };
-  };
-
+  // Função de upload de ficheiros
   const handleFileUpload = async (e) => {
-  const selected = Array.from(e.target.files || []);
-  if (!selected.length) return;
+    const selected = Array.from(e.target.files || []);
+    if (!selected.length) return;
 
-  const readers = selected.map(
-    (file) =>
-      new Promise((resolve) => {
-        const reader = new FileReader();
-        const name = file.name;
+    const readers = selected.map(
+      (file) =>
+        new Promise((resolve) => {
+          const reader = new FileReader();
+          const name = file.name;
 
-        reader.onload = (ev) => {
-          const text = ev.target.result;
+          reader.onload = (ev) => {
+            const text = ev.target.result;
 
-          if (name.toLowerCase().endsWith(".csv")) {
-            const lines = text.split(/\r\n|\n/).filter((l) => l.length);
-            const headers = lines[0].split(",").map((h) => h.trim());
-            const rows = lines.slice(1).map((line) => line.split(",").map((c) => c.trim()));
-            resolve({ name, headers, rows });
-            return;
-          }
+            if (name.toLowerCase().endsWith(".csv")) {
+              const lines = text.split(/\r\n|\n/).filter((l) => l.length);
+              const headers = lines[0].split(",").map((h) => h.trim());
+              const rows = lines.slice(1).map((line) => line.split(",").map((c) => c.trim()));
+              resolve({ name, headers, rows });
+              return;
+            }
 
-          if (name.toLowerCase().endsWith(".json")) {
-            try {
-              const data = JSON.parse(text);
-              if (Array.isArray(data) && data.length && typeof data[0] === "object") {
-                const headers = Object.keys(data[0]);
+            if (name.toLowerCase().endsWith(".json")) {
+              try {
+                const data = JSON.parse(text);
+                const headers = Object.keys(data[0] || {});
                 const rows = data.map((row) => headers.map((h) => String(row[h] ?? "")));
                 resolve({ name, headers, rows });
-              } else {
+              } catch {
                 resolve({ name, headers: ["Conteúdo"], rows: text.split(/\r\n|\n/).map((l) => [l]) });
               }
-            } catch {
-              resolve({ name, headers: ["Conteúdo"], rows: text.split(/\r\n|\n/).map((l) => [l]) });
+              return;
             }
-            return;
-          }
 
-          if (name.toLowerCase().endsWith(".txt")) {
-            resolve({ name, headers: ["Conteúdo"], rows: text.split(/\r\n|\n/).map((l) => [l]) });
-            return;
-          }
+            if (name.toLowerCase().endsWith(".txt")) {
+              resolve({ name, headers: ["Conteúdo"], rows: text.split(/\r\n|\n/).map((l) => [l]) });
+              return;
+            }
 
-          // XLSX e PDF - placeholder
-          resolve({ name, headers: ["Aviso"], rows: [["Pré-visualização será ativada na próxima etapa."]] });
-        };
+            // Placeholder para XLSX/PDF
+            resolve({ name, headers: ["Aviso"], rows: [["Pré-visualização será ativada na próxima etapa."]] });
+          };
 
-        reader.readAsText(file);
-      })
-  );
+          reader.readAsText(file);
+        })
+    );
 
-  const parsed = await Promise.all(readers);
-  setFilesData((prev) => [...prev, ...parsed]);
-  e.target.value = "";
-};
+    const parsed = await Promise.all(readers);
+    setFilesData((prev) => [...prev, ...parsed]);
+    e.target.value = "";
+  };
 
-  reader.onload = (event) => {
-  const text = event.target.result;
-  const rows = text.split("\n").map((r) => r.split(","));
-  const headers = rows.shift();
-
-  // ✅ agora criamos o objeto completo já com o nome do ficheiro
-  const parsed = [{
-    name: file.name,   // inclui o nome do ficheiro (ex: vendas.csv)
-    headers,
-    rows,
-  }];
-
-  // ✅ e usamos o parsed no state
-  setFilesData((prev) => [...prev, ...parsed]);
-
-  e.target.value = "";
-};
+  const removeFile = (name) => {
+    setFilesData((prev) => prev.filter((f) => f.name !== name));
+    setRelations((prev) => {
+      const copy = { ...prev };
+      delete copy[name];
+      return copy;
+    });
+  };
 
   const removeAll = () => {
     setFilesData([]);
@@ -146,19 +97,21 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen p-6 bg-gradient-to-b from-blue-100 to-purple-100">
-      {/* Top bar: menus à direita */}
-      <div className="flex justify-end p-3 mb-4 bg-white rounded-xl shadow-md">
+    <div className="min-h-screen relative" style={{ 
+      background: "linear-gradient(to bottom, #ADD8FF, #A3E4B2, #C9A0FF)" 
+    }}>
+      {/* Top bar */}
+      <div className="flex justify-end p-3 shadow-md bg-white rounded-b-xl">
         <nav className="flex gap-4 text-sm">
           <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Início</a>
           <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Serviços</a>
           <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Pagamento</a>
-          <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Resultado</a>
+          <a className="hover:underline cursor-pointer px-2 py-1 rounded hover:bg-gray-100 transition">Resultados</a>
         </nav>
       </div>
 
-      {/* Nome + frase */}
-      <header className="text-center my-4">
+      {/* Logo e frase */}
+      <header className="text-center my-6">
         <a
           href="https://www.klinosinsight.com"
           target="_blank"
@@ -173,71 +126,63 @@ export default function App() {
       </header>
 
       {/* Dashboards */}
-      <section className="flex flex-col md:flex-row justify-center gap-6 mb-8">
+      <section className="flex flex-col md:flex-row justify-center gap-6 mb-8 px-4">
         {cards.map((card, idx) => (
           <div
             key={idx}
-            className="bg-gradient-to-br from-blue-500 to-purple-400 rounded-2xl p-6 flex-1 text-white text-center shadow-md transform transition hover:scale-105"
+            className="rounded-2xl p-6 flex-1 text-white text-center shadow-md transform transition hover:scale-105"
+            style={{ background: "linear-gradient(to bottom left, #3B82F6, #9333EA)" }}
           >
             <div className="text-4xl mb-3 font-bold">{card.icon}</div>
-            <h2 className="text-xl font-bold mb-2">{card.title}</h2>
-            <p className="text-sm" style={{ fontSize: "16px" }}>{card.description}</p>
+            <h2 className="text-2xl font-bold mb-2">{card.title}</h2>
+            <p className="text-base">{card.description}</p>
           </div>
         ))}
       </section>
 
-      {/* Área principal: pré-visualizar */}
-      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm">
-        {/* Colar/editar JSON */}
-        <div className="p-3 border rounded mb-4 bg-purple-50">
+      {/* JSON e upload */}
+      <section className="max-w-5xl mx-auto mb-10 px-4">
+        <div className="mb-4 bg-purple-50 rounded-xl p-4">
           <label className="text-gray-800 font-semibold">Colar ou editar JSON</label>
           <textarea
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
             placeholder="Cole aqui o JSON"
-            className="w-full p-2 mt-2 rounded h-16 text-gray-800"
+            className="w-full p-2 mt-2 rounded h-24 text-gray-800"
           />
         </div>
 
-        {/* Upload de ficheiros */}
-        <div className="p-4 border rounded bg-blue-50 mb-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <div className="text-gray-800 font-semibold text-lg">
-                Carregar ficheiro{" "}
-                <span className="text-sm font-normal">
-                  - .csv, .txt, .json, .xlsx, .pdf
-                </span>
-              </div>
-              <input
-                type="file"
-                multiple
-                accept=".csv,.txt,.json,.xlsx,.pdf"
-                onChange={handleFileUpload}
-                className="mt-2"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={removeAll}
-                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
-              >
-                Apagar todos
-              </button>
-            </div>
+        <div className="flex gap-4 mb-4">
+          <div className="flex-1 bg-blue-50 rounded-xl p-4">
+            <label className="text-gray-800 font-semibold text-lg">Carregar ficheiro - .csv, .txt, .json, .xlsx, .pdf</label>
+            <input
+              type="file"
+              multiple
+              accept=".csv,.txt,.json,.xlsx,.pdf"
+              onChange={handleFileUpload}
+              className="mt-2"
+            />
           </div>
-
-          {filesData.length === 0 && (
-            <p className="text-gray-800 italic mt-3">Nenhum ficheiro selecionado</p>
-          )}
+          <div className="flex items-end">
+            <button
+              onClick={removeAll}
+              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+            >
+              Apagar todos
+            </button>
+          </div>
         </div>
 
-        {/* Lista de ficheiros */}
-        {filesData.map((f, index) => (
-          <div key={f.name + index} className="mb-4 border rounded bg-white shadow-sm">
+        {filesData.length === 0 && (
+          <p className="text-gray-800 italic mt-3">Nenhum ficheiro selecionado</p>
+        )}
+
+        {/* Pré-visualização */}
+        {filesData.map((f, idx) => (
+          <div key={f.name + idx} className="mb-4 border rounded-xl bg-white shadow-sm">
             <div className="flex justify-between items-center px-3 py-2 border-b">
               <p className="font-semibold text-gray-800">
-                {index + 1}. {f.name} - {f.headers.length} colunas, {f.rows.length.toLocaleString()} linhas
+                {idx + 1}. {f.name} - {f.headers.length} colunas, {f.rows.length.toLocaleString()} linhas
               </p>
               <button
                 onClick={() => removeFile(f.name)}
@@ -247,15 +192,12 @@ export default function App() {
                 🗑️
               </button>
             </div>
-
             <div className="overflow-x-auto p-3">
               <table className="min-w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
                     {f.headers.map((h, i) => (
-                      <th key={i} className="px-2 py-1 border text-sm whitespace-nowrap">
-                        {h}
-                      </th>
+                      <th key={i} className="px-2 py-1 border text-sm whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -274,22 +216,10 @@ export default function App() {
             </div>
           </div>
         ))}
-
-        {/* Botão Serviços final da seção de pré-visualização */}
-        {filesData.length > 0 && (
-          <div className="flex justify-end mt-4">
-            <a
-              href="/servicos"
-              className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition"
-            >
-              Serviços
-            </a>
-          </div>
-        )}
       </section>
 
       {/* Relacionar colunas */}
-      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm">
+      <section className="max-w-5xl mx-auto mb-20 px-4">
         <h3 className="text-xl font-semibold mb-4">Relacionar colunas</h3>
         {filesData.length > 1 ? (
           filesData.map((file) => (
@@ -308,40 +238,29 @@ export default function App() {
             </div>
           ))
         ) : (
-          <p className="text-gray-600 italic">
-            Carregue pelo menos 2 ficheiros para relacionar colunas.
-          </p>
+          <p className="text-gray-600 italic">Carregue pelo menos 2 ficheiros para relacionar colunas.</p>
         )}
-
-        {/* Mostrar relações de colunas */}
         {Object.keys(relations).length > 0 && (
           <div className="mt-4 p-3 bg-gray-50 rounded border">
             <h4 className="font-semibold mb-2">Colunas relacionadas:</h4>
             <ul className="text-sm">
               {Object.entries(relations).map(([file, col], idx) => (
-                <li key={idx}>
-                  <strong>{file}</strong> → {col || "nenhuma coluna escolhida"}
-                </li>
+                <li key={idx}><strong>{file}</strong> → {col || "nenhuma coluna escolhida"}</li>
               ))}
             </ul>
           </div>
         )}
-
-
-        {/* Botão Serviços final da seção Relacionar colunas */}
-        {filesData.length > 1 && (
-          <div className="flex justify-end mt-4">
-            <a
-              href="/servicos"
-              className="bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition"
-            >
-              Serviços
-            </a>
-          </div>
-        )}
       </section>
 
-      {/* Rodapé */}
+      {/* Botão Serviços sempre visível no fundo direito */}
+      <a
+        href="/servicos"
+        className="fixed bottom-4 right-4 bg-blue-500 text-white rounded px-4 py-2 hover:bg-blue-600 transition z-50"
+      >
+        Serviços
+      </a>
+
+      {/* Footer */}
       <footer className="text-center text-gray-600 py-2 text-[10px]">
         2025 Klinos Insight. Todos os direitos reservados.
       </footer>
