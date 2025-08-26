@@ -144,7 +144,6 @@ export default function App() {
   const setRelationForFile = (fileName, col) => {
     setRelations((prev) => ({ ...prev, [fileName]: col }));
   };
-
   return (
     <div className="min-h-screen p-6 bg-gradient-to-b from-blue-100 to-purple-100">
       {/* Top bar: menus à direita */}
