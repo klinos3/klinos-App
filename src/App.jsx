@@ -124,18 +124,37 @@ export default function App() {
     setUploadMessage("Nenhum ficheiro selecionado");
   };
 
+// Relacionar colunas manualmente
 const setRelationForFile = (fileName, col, tableName = null) => {
   setRelations((prev) => {
-    const prevCols = Array.isArray(prev[fileName]?.columns) ? prev[fileName].columns : [];
+    const prevCols = prev[fileName]?.columns || [];
+    const newCols = col ? [...prevCols, col] : prevCols;
     return {
       ...prev,
-      [fileName]: {
-        columns: [...prevCols, col].filter(Boolean), // adiciona a nova coluna
-        table: tableName, // tabela em comum
-      },
+      [fileName]: { columns: newCols, table: tableName || prev[fileName]?.table || "" },
     };
   });
 };
+
+// Relacionamento automático (primeira coluna comum)
+const autoRelateFiles = () => {
+  const newRelations = {};
+  filesData.forEach((file) => {
+    filesData.forEach((otherFile) => {
+      if (file.name === otherFile.name) return;
+      // Colunas em comum
+      const commonCols = file.headers.filter((h) => otherFile.headers.includes(h));
+      if (commonCols.length) {
+        newRelations[file.name] = {
+          columns: commonCols,
+          table: otherFile.name,
+        };
+      }
+    });
+  });
+  setRelations(newRelations);
+};
+
 
 
 
@@ -305,6 +324,16 @@ const setRelationForFile = (fileName, col, tableName = null) => {
         ) : (
           <p className="text-gray-600 italic">Carregue pelo menos 2 ficheiros para relacionar colunas.</p>
         )}
+        {filesData.length > 1 && (
+  <div className="flex justify-start mt-2 mb-4">
+    <button
+      onClick={autoRelateFiles}
+      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition"
+    >
+      Relacionar automaticamente
+    </button>
+  </div>
+)}
 
         {/* Mostrar relações de colunas */}
         {Object.keys(relations).length > 0 && (
