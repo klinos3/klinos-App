@@ -35,37 +35,86 @@ export default function App() {
 
   // Função de upload
 const handleFileUpload = async (e) => {
-  const file = e.target.files[0];
-  const reader = new FileReader();
+  const selected = Array.from(e.target.files || []);
+  if (!selected.length) return;
 
-  reader.onload = async (evt) => {
-    let parsedData = [];
+  // verificar extensões válidas
+  const invalidFile = selected.find(
+    (f) => !validExtensions.some((ext) => f.name.toLowerCase().endsWith(ext))
+  );
+  if (invalidFile) {
+    setUploadMessage("Ficheiro não suportado");
+    return;
+  }
 
-    // CSV ou TXT
-    if (file.name.endsWith(".csv") || file.name.endsWith(".txt")) {
-      parsedData = Papa.parse(evt.target.result, { header: true }).data;
-    }
-    // JSON
-    else if (file.name.endsWith(".json")) {
-      parsedData = JSON.parse(evt.target.result);
-    }
-    // XLSX
-    else if (file.name.endsWith(".xlsx")) {
-      const workbook = XLSX.read(evt.target.result, { type: "binary" });
-      const sheetName = workbook.SheetNames[0];
-      parsedData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-    }
+  setUploadMessage("");
 
-    // 👉 Garante que SEMPRE tens columns e rows
-    const newFile = {
-      fileName: file.name,
-      columns: parsedData.length > 0 ? Object.keys(parsedData[0]) : [],
-      rows: parsedData
-    };
+  const readers = selected.map(
+    (file) =>
+      new Promise((resolve) => {
+        const reader = new FileReader();
+        const fileName = file.name;
 
-    // 👉 Adiciona ao state
-    setFilesData((prev) => [...prev, newFile]);
-  };
+        reader.onload = (ev) => {
+          const text = ev.target.result;
+
+          // CSV
+          if (fileName.toLowerCase().endsWith(".csv")) {
+            const lines = text.split(/\r\n|\n/).filter((l) => l.length);
+            const columns = lines[0].split(",").map((h) => h.trim());
+            const rows = lines.slice(1).map((line) =>
+              line.split(",").map((c) => c.trim())
+            );
+            resolve({ fileName, columns, rows });
+            return;
+          }
+
+          // JSON
+          if (fileName.toLowerCase().endsWith(".json")) {
+            try {
+              const data = JSON.parse(text);
+              const columns = Object.keys(data[0] || {});
+              const rows = data.map((row) =>
+                columns.map((c) => String(row[c] ?? ""))
+              );
+              resolve({ fileName, columns, rows });
+            } catch {
+              resolve({
+                fileName,
+                columns: ["Conteúdo"],
+                rows: text.split(/\r\n|\n/).map((l) => [l]),
+              });
+            }
+            return;
+          }
+
+          // TXT
+          if (fileName.toLowerCase().endsWith(".txt")) {
+            resolve({
+              fileName,
+              columns: ["Conteúdo"],
+              rows: text.split(/\r\n|\n/).map((l) => [l]),
+            });
+            return;
+          }
+
+          // XLSX / PDF (placeholder)
+          resolve({
+            fileName,
+            columns: ["Aviso"],
+            rows: [["Pré-visualização será ativada na próxima etapa."]],
+          });
+        };
+
+        reader.readAsText(file);
+      })
+  );
+
+  const parsed = await Promise.all(readers);
+  setFilesData((prev) => [...prev, ...parsed]);
+  e.target.value = "";
+};
+
 
   if (file.name.endsWith(".xlsx")) {
     reader.readAsBinaryString(file);
