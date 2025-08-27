@@ -139,22 +139,35 @@ const setRelationForFile = (fileName, col, tableName = null) => {
 
 // Relacionamento automático (primeira coluna comum)
 const autoRelateFiles = () => {
-  const newRelations = {};
-  filesData.forEach((file) => {
-    filesData.forEach((otherFile) => {
-      if (file.name === otherFile.name) return;
-      // Colunas em comum
-      const commonCols = file.headers.filter((h) => otherFile.headers.includes(h));
-      if (commonCols.length) {
-        newRelations[file.name] = {
-          columns: commonCols,
-          table: otherFile.name,
-        };
+  if (filesData.length < 2) {
+    alert("Carregue pelo menos 2 ficheiros para relacionar.");
+    return;
+  }
+
+  let foundRelations = {};
+  let related = false;
+
+  for (let i = 0; i < filesData.length; i++) {
+    for (let j = i + 1; j < filesData.length; j++) {
+      const commonCols = filesData[i].columns.filter(col =>
+        filesData[j].columns.includes(col)
+      );
+      if (commonCols.length > 0) {
+        foundRelations[filesData[i].fileName] = commonCols[0];
+        foundRelations[filesData[j].fileName] = commonCols[0];
+        related = true;
       }
-    });
-  });
-  setRelations(newRelations);
+    }
+  }
+
+  if (!related) {
+    alert("Nenhuma coluna em comum encontrada entre os ficheiros.");
+  }
+
+  setAutoRelations(foundRelations);
+  setRelations(foundRelations);
 };
+
 
 
 
