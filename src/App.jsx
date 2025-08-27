@@ -16,7 +16,6 @@ const App = () => {
 
   const validExtensions = [".csv", ".txt", ".json", ".xlsx", ".pdf"];
 
-  // Upload e parsing de ficheiros
   const handleFileUpload = async (e) => {
     const selected = Array.from(e.target.files || []);
     if (!selected.length) return;
@@ -113,7 +112,6 @@ const App = () => {
     e.target.value = "";
   };
 
-  // JSON preview
   const handleJsonPreview = () => {
     try {
       const data = JSON.parse(jsonData);
@@ -125,20 +123,19 @@ const App = () => {
     }
   };
 
-  // Relacionamentos
   const clearAllRelations = () => setRelations({});
 
   const autoRelateFiles = () => {
     const newRelations = {};
     filesData.forEach((f1) => {
-      const relatedCols = {};
+      const related = {};
       filesData.forEach((f2) => {
         if (f1.name !== f2.name) {
           const common = f1.headers.filter((h) => f2.headers.includes(h));
-          if (common.length) relatedCols[f2.name] = common;
+          if (common.length) related[f2.name] = common;
         }
       });
-      if (Object.keys(relatedCols).length) newRelations[f1.name] = relatedCols;
+      if (Object.keys(related).length) newRelations[f1.name] = related;
     });
     setRelations(newRelations);
   };
@@ -158,7 +155,7 @@ const App = () => {
 
       {/* Título */}
       <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold mb-6">Klinos Insight - App</h1>
+        <h1 className="text-3xl font-bold mb-4">Klinos Insight - App</h1>
         <p className="text-lg mb-6">Automação inteligente: menos tempo em tarefas, mais tempo em resultados.</p>
       </div>
 
@@ -179,4 +176,84 @@ const App = () => {
 
       {/* JSON */}
       <div className="mb-6 p-4 bg-white rounded-xl shadow">
-        <textarea value={jsonData} onChange={(e) => setJsonData(e.target.value)} placeholder="Cole ou edite JSON aqui..." className={`
+        <textarea value={jsonData} onChange={(e) => setJsonData(e.target.value)} placeholder="Cole ou edite JSON aqui..." className={`w-full border p-2 rounded mb-2 ${expandedJson ? "h-64" : "h-24"}`} />
+        <div className="flex space-x-2 mb-2">
+          <button onClick={() => setExpandedJson(!expandedJson)} className="px-2 py-1 bg-gray-400 text-white rounded">{expandedJson ? "Reduzir" : "Expandir"}</button>
+          <button onClick={handleJsonPreview} className="px-2 py-1 bg-green-500 text-white rounded">Adicionar Pré-visualização</button>
+        </div>
+      </div>
+
+      {/* Upload */}
+      <div className="mb-6 p-4 bg-white rounded-xl shadow flex flex-col md:flex-row items-start md:items-center justify-between">
+        <div className="flex flex-col mb-2 md:mb-0">
+          <label className="mb-1 font-semibold">Carregar ficheiro - .csv, .txt, .json, .xlsx, .pdf</label>
+          <input type="file" multiple onChange={handleFileUpload} className="border p-1 rounded" />
+          <span className="text-sm text-gray-600 mt-1">{uploadMessage}</span>
+        </div>
+        <button onClick={() => setFilesData([])} className="px-2 py-1 bg-red-500 text-white rounded mt-2 md:mt-0">Apagar todos</button>
+      </div>
+
+      {/* Pré-visualização */}
+      <div className="mb-6 p-4 bg-white rounded-xl shadow">
+        {previewJson.concat(filesData).map((f, idx) => (
+          <div key={idx} className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-bold">{f.name} ({f.headers.length} colunas, {f.rows.length} linhas)</span>
+              <FaTrash className="cursor-pointer text-red-500" onClick={() => setFilesData(filesData.filter((_, i) => i !== idx))} />
+            </div>
+            <table className="table-auto w-full text-sm border-collapse">
+              <thead>
+                <tr>
+                  {f.headers.map((h, i) => <th key={i} className="border px-2 bg-gray-200">{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {f.rows.slice(0, 5).map((row, i) => (
+                  <tr key={i} className={i%2===0 ? "bg-gray-50" : "bg-white"}>
+                    {row.map((cell, j) => <td key={j} className="border px-2">{cell}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
+      </div>
+
+      {/* Relacionar colunas */}
+      <div className="mb-6 p-4 bg-white rounded-xl shadow">
+        <div className="flex justify-between items-center mb-2">
+          <span>Relacionar Colunas</span>
+          <button onClick={clearAllRelations} className="px-2 py-1 bg-red-500 text-white rounded">Limpar todas relações</button>
+        </div>
+        <div className="flex space-x-2 mb-2">
+          <button onClick={autoRelateFiles} className="px-2 py-1 bg-green-500 text-white rounded">Relacionar automaticamente</button>
+          <button className="px-2 py-1 bg-blue-500 text-white rounded">Relacionar manualmente</button>
+        </div>
+        <p className="text-sm mb-2 text-gray-600">Relaciona com base em colunas com o mesmo nome</p>
+        <p className="text-sm mb-2 text-gray-600">Escolha as colunas que quer relacionar</p>
+        {Object.keys(relations).map((f1) => (
+          <div key={f1} className="mb-2">
+            <strong>{f1}:</strong>
+            <ul className="ml-4 list-disc">
+              {Object.entries(relations[f1]).map(([f2, cols]) => (
+                <li key={f2}>
+                  {f2}: {cols.join(", ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      {/* Botão Serviços */}
+      <div className="fixed bottom-4 right-4">
+        <a href="/servicos" className="px-4 py-2 bg-purple-600 text-white rounded shadow">Serviços</a>
+      </div>
+
+      {/* Footer */}
+      <footer className="mt-12 text-center text-xs text-gray-600">2025 Klinos Insight</footer>
+    </div>
+  );
+};
+
+export default App;
