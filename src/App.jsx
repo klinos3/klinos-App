@@ -185,10 +185,6 @@ const autoRelateFiles = () => {
 };
 
 
-
-
-
-  return (
     <div className="min-h-screen bg-gradient-to-b from-blue-200 via-green-100 to-purple-200 p-6">
       {/* Top bar */}
       <div className="flex justify-between items-center p-3 shadow-md bg-white rounded-b-xl mb-6">
