@@ -296,7 +296,7 @@ const autoRelateFiles = () => {
         ))}
       </section>
 
-        <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm">
+      <section className="bg-white p-6 rounded-xl max-w-5xl mx-auto mb-10 shadow-sm">
   <h3 className="text-xl font-semibold mb-4">Relacionar colunas</h3>
 
   {/* --- Relacionar manualmente --- */}
@@ -361,6 +361,7 @@ const autoRelateFiles = () => {
     </div>
   )}
 </section>
+
 
 
       {/* Botão Serviços sempre visível no canto inferior direito */}
