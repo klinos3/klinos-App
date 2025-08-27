@@ -1,266 +1,234 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
-import * as pdfjsLib from "pdfjs-dist";
-import "pdfjs-dist/build/pdf.worker.entry";
+import { FaTrash, FaBolt, FaPuzzlePiece, FaLock } from "react-icons/fa";
+import { pdfjs } from "react-pdf";
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+
+const dashboards = [
+  { icon: <FaBolt size={32} />, title: "Rápido", description: "Carregue e processe os seus ficheiros em segundos. Analise os dados sem esperas e ganhe tempo para decisões importantes." },
+  { icon: <FaPuzzlePiece size={32} />, title: "Simples", description: "Tudo num só lugar: carregamento, pré-visualização e exportação. Automatize tarefas complexas com um clique." },
+  { icon: <FaLock size={32} />, title: "Seguro", description: "Os seus dados permanecem privados e protegidos. Toda a automação cumpre as melhores práticas de segurança." }
+];
+
+const validExtensions = [".csv", ".txt", ".json", ".xlsx", ".pdf"];
 
 export default function App() {
-  const [files, setFiles] = useState([]);
   const [jsonInput, setJsonInput] = useState("");
   const [jsonExpanded, setJsonExpanded] = useState(false);
-  const [relations, setRelations] = useState([]);
-  const [autoRelations, setAutoRelations] = useState([]);
+  const [filesData, setFilesData] = useState([]);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [relations, setRelations] = useState({});
+  const [autoRelations, setAutoRelations] = useState({});
 
-  // ---- FILE HANDLER ----
-  const handleFileUpload = async (event) => {
-    const uploadedFiles = Array.from(event.target.files);
-    const newFiles = [];
+  // Funções de parse
+  const parseCSV = (text) => {
+    const lines = text.split(/\r\n|\n/).filter((l) => l.length);
+    if (!lines.length) return { headers: [], rows: [] };
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const rows = lines.slice(1).map((line) => line.split(",").map((c) => c.trim()));
+    return { headers, rows };
+  };
 
-    for (const file of uploadedFiles) {
+  const parseJSON = (text) => {
+    try {
+      const data = JSON.parse(text);
+      if (Array.isArray(data) && data.length && typeof data[0] === "object") {
+        const headers = Object.keys(data[0]);
+        const rows = data.map((row) => headers.map((h) => String(row[h] ?? "")));
+        return { headers, rows };
+      }
+      const lines = text.split(/\r\n|\n/);
+      return { headers: ["Conteúdo"], rows: lines.map((l) => [l]) };
+    } catch {
+      const lines = text.split(/\r\n|\n/);
+      return { headers: ["Conteúdo"], rows: lines.map((l) => [l]) };
+    }
+  };
+
+  const parseTXT = (text) => {
+    const lines = text.split(/\r\n|\n/);
+    return { headers: ["Conteúdo"], rows: lines.map((l) => [l]) };
+  };
+
+  const parseXLSX = async (file) => {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    const headers = json[0] || [];
+    const rows = json.slice(1);
+    return { name: file.name, headers, rows };
+  };
+
+  const parsePDF = async (file) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+    let textItems = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      textItems.push(content.items.map((item) => item.str).join(" "));
+    }
+    return { name: file.name, headers: ["Conteúdo"], rows: textItems.map((t) => [t]) };
+  };
+
+  const handleFileUpload = async (e) => {
+    const selected = Array.from(e.target.files || []);
+    if (!selected.length) return;
+
+    // Verificar ficheiros não suportados
+    const invalidFile = selected.find(f => !validExtensions.some(ext => f.name.toLowerCase().endsWith(ext)));
+    if (invalidFile) {
+      setUploadMessage("Ficheiro não suportado");
+      return;
+    }
+    setUploadMessage("");
+
+    const parsedFiles = await Promise.all(selected.map(async (file) => {
       const ext = file.name.split(".").pop().toLowerCase();
-      if (!["csv", "txt", "json", "xlsx", "pdf"].includes(ext)) {
-        newFiles.push({
-          name: file.name,
-          type: "unsupported",
-          tables: [],
-          message: "Ficheiro não suportado",
-        });
-        continue;
-      }
+      if (ext === "csv") return { ...parseCSV(await file.text()), name: file.name };
+      if (ext === "txt") return { ...parseTXT(await file.text()), name: file.name };
+      if (ext === "json") return { ...parseJSON(await file.text()), name: file.name };
+      if (ext === "xlsx") return await parseXLSX(file);
+      if (ext === "pdf") return await parsePDF(file);
+      return { name: file.name, headers: ["Aviso"], rows: [["Formato não suportado"]] };
+    }));
 
-      let content = "";
-      let tables = [];
+    setFilesData(prev => [...prev, ...parsedFiles]);
+    e.target.value = "";
+  };
 
-      if (ext === "csv" || ext === "txt") {
-        content = await file.text();
-        tables = parseCSV(content);
-      } else if (ext === "json") {
-        content = await file.text();
-        try {
-          const parsed = JSON.parse(content);
-          tables = Array.isArray(parsed) ? [parsed] : [Object.values(parsed)];
-        } catch {
-          tables = [];
+  const removeFile = (name) => setFilesData(prev => prev.filter(f => f.name !== name));
+  const removeAll = () => { setFilesData([]); setRelations({}); setAutoRelations({}); };
+
+  const setRelationForFile = (fileName, col) => {
+    setRelations(prev => ({ ...prev, [fileName]: col }));
+  };
+
+  const autoRelateFiles = () => {
+    let newAutoRelations = {};
+    filesData.forEach(fileA => {
+      const others = filesData.filter(f => f.name !== fileA.name);
+      others.forEach(fileB => {
+        const commonCols = fileA.headers?.filter(h => fileB.headers?.includes(h)) || [];
+        if (commonCols.length) {
+          newAutoRelations[fileA.name] = { columns: commonCols, table: fileB.name };
+        } else {
+          newAutoRelations[fileA.name] = { columns: [], table: fileB.name };
         }
-      } else if (ext === "xlsx") {
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data, { type: "array" });
-        tables = workbook.SheetNames.map((name) => ({
-          name,
-          rows: XLSX.utils.sheet_to_json(workbook.Sheets[name], {
-            header: 1,
-          }),
-        }));
-      } else if (ext === "pdf") {
-        const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
-        let text = "";
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          text += content.items.map((item) => item.str).join(" ") + "\n";
-        }
-        tables = [{ name: "PDF Content", rows: text.split("\n") }];
-      }
-
-      newFiles.push({
-        name: file.name,
-        type: ext,
-        tables,
-        message: "",
       });
-    }
-    setFiles((prev) => [...prev, ...newFiles]);
+    });
+    setAutoRelations(newAutoRelations);
   };
-
-  const parseCSV = (str) => {
-    const rows = str.split("\n").map((r) => r.split(","));
-    return [{ name: "CSV", rows }];
-  };
-
-  const handleClearFiles = () => setFiles([]);
-
-  // ---- AUTO RELATIONS ----
-  const handleAutoRelations = () => {
-    const relationsFound = [];
-    if (files.length < 2) return;
-
-    for (let i = 0; i < files.length; i++) {
-      for (let j = i + 1; j < files.length; j++) {
-        const fileA = files[i];
-        const fileB = files[j];
-
-        const colsA =
-          fileA.tables?.[0]?.rows?.[0]?.map((c) => c.toString()) || [];
-        const colsB =
-          fileB.tables?.[0]?.rows?.[0]?.map((c) => c.toString()) || [];
-
-        const common = colsA.filter((c) => colsB.includes(c));
-        if (common.length > 0) {
-          relationsFound.push({
-            files: [fileA.name, fileB.name],
-            columns: common,
-          });
-        }
-      }
-    }
-    setAutoRelations(relationsFound);
-  };
-
-  // ---- JSON EXPAND ----
-  const toggleJsonExpand = () => setJsonExpanded(!jsonExpanded);
 
   return (
-    <div
-      className="min-h-screen text-gray-900 flex flex-col"
-      style={{
-        background: "linear-gradient(to bottom, #a7d8ff, #a7ffd8, #e0b3ff)",
-      }}
-    >
-      {/* ---- HEADER ---- */}
-      <header className="flex justify-between items-center p-4 shadow-md bg-white rounded-b-lg">
-        <a href="https://www.klinosinsight.com" className="font-bold text-lg">
-          Klinos Insight
-        </a>
-        <nav className="space-x-4">
-          <a href="#">Início</a>
-          <a href="#">Serviços</a>
-          <a href="#">Pagamento</a>
-          <a href="#">Resultados</a>
+    <div className="min-h-screen bg-gradient-to-b from-blue-200 via-green-100 to-purple-200 p-6">
+      {/* Top bar */}
+      <div className="flex justify-between items-center p-3 shadow-md bg-white rounded-b-xl mb-6">
+        <a href="https://www.klinosinsight.com" target="_blank" rel="noopener noreferrer" className="font-bold text-xl">Klinos Insight</a>
+        <nav className="flex gap-4">
+          <span className="cursor-pointer hover:underline">Início</span>
+          <span className="cursor-pointer hover:underline">Serviços</span>
+          <span className="cursor-pointer hover:underline">Pagamento</span>
+          <span className="cursor-pointer hover:underline">Resultado</span>
         </nav>
+      </div>
+
+      {/* Central logo */}
+      <header className="text-center my-4">
+        <h1 className="text-4xl font-bold">Klinos Insight - App</h1>
+        <p className="mt-2 text-gray-700 text-base">Automação inteligente: menos tempo em tarefas, mais tempo em resultados.</p>
       </header>
 
-      {/* ---- HERO ---- */}
-      <div className="text-center mt-8">
-        <h1 className="text-3xl font-bold">Klinos Insight - App</h1>
-        <p className="text-lg mt-2">
-          Automação inteligente: menos tempo em tarefas, mais tempo em
-          resultados.
-        </p>
-      </div>
+      {/* Dashboards */}
+      <section className="flex flex-col md:flex-row justify-center gap-6 mb-8">
+        {dashboards.map((d, i) => (
+          <div key={i} className="flex-1 bg-gradient-to-br from-blue-500 to-purple-400 rounded-2xl p-6 text-white text-center shadow-md hover:scale-105 transition">
+            <div className="mb-3">{d.icon}</div>
+            <h2 className="text-xl font-bold mb-2">{d.title}</h2>
+            <p className="text-base">{d.description}</p>
+          </div>
+        ))}
+      </section>
 
-      {/* ---- DASHBOARDS ---- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 m-8">
-        <div className="p-4 rounded-2xl shadow-md bg-gradient-to-br from-blue-400 to-purple-400">
-          <h2 className="font-bold">⚡ Rápido</h2>
-          <p>
-            Carregue e processe os seus ficheiros em segundos. Analise os dados
-            sem esperas e ganhe tempo para decisões importantes.
-          </p>
-        </div>
-        <div className="p-4 rounded-2xl shadow-md bg-gradient-to-br from-blue-400 to-purple-400">
-          <h2 className="font-bold">🧩 Simples</h2>
-          <p>
-            Tudo num só lugar: carregamento, pré-visualização e exportação.
-            Automatize tarefas complexas com um clique.
-          </p>
-        </div>
-        <div className="p-4 rounded-2xl shadow-md bg-gradient-to-br from-blue-400 to-purple-400">
-          <h2 className="font-bold">🔒 Seguro</h2>
-          <p>
-            Os seus dados permanecem privados e protegidos. Toda a automação
-            cumpre as melhores práticas de segurança.
-          </p>
-        </div>
-      </div>
-
-      {/* ---- JSON ---- */}
-      <div className="p-4 m-4 bg-white rounded-2xl shadow-md">
-        <div className="flex justify-between">
-          <label>Colar ou editar JSON</label>
-          <button
-            onClick={toggleJsonExpand}
-            className="px-2 py-1 bg-blue-500 text-white rounded"
-          >
-            {jsonExpanded ? "Reduzir" : "Expandir"}
-          </button>
+      {/* JSON editor */}
+      <div className={`bg-white p-4 rounded-xl mb-4 ${jsonExpanded ? "h-64" : "h-24"} transition-all`}>
+        <div className="flex justify-between items-center mb-2">
+          <span className="font-semibold">Colar ou editar JSON</span>
+          <button onClick={() => setJsonExpanded(!jsonExpanded)} className="bg-blue-500 text-white px-2 py-1 rounded">{jsonExpanded ? "Reduzir" : "Expandir"}</button>
         </div>
         <textarea
-          className="w-full border p-2 mt-2 rounded"
-          rows={jsonExpanded ? 10 : 4}
+          className="w-full h-full p-2 border rounded"
           value={jsonInput}
           onChange={(e) => setJsonInput(e.target.value)}
         />
       </div>
 
-      {/* ---- FILE UPLOAD ---- */}
-      <div className="p-4 m-4 bg-white rounded-2xl shadow-md">
-        <p>
-          Carregar ficheiro - .csv, .txt, .json, .xlsx, .pdf
-        </p>
-        <input type="file" multiple onChange={handleFileUpload} />
-        <button
-          onClick={handleClearFiles}
-          className="ml-2 px-2 py-1 bg-red-500 text-white rounded"
-        >
-          Apagar todos
-        </button>
-        <p className="mt-2">
-          {files.length === 0 ? "Nenhum ficheiro selecionado" : ""}
-        </p>
+      {/* Upload files */}
+      <div className="bg-white p-4 rounded-xl mb-4">
+        <label className="font-semibold block mb-2">Carregar ficheiro - .csv, .txt, .json, .xlsx, .pdf</label>
+        <input type="file" multiple onChange={handleFileUpload} className="mb-2" />
+        <div className="flex justify-between items-center">
+          <span>{filesData.length ? `${filesData.length} ficheiro(s) selecionado(s)` : uploadMessage || "Nenhum ficheiro selecionado"}</span>
+          <button onClick={removeAll} className="bg-red-500 text-white px-2 py-1 rounded">Apagar todos</button>
+        </div>
       </div>
 
-      {/* ---- FILE PREVIEW ---- */}
-      {files.map((file, idx) => (
-        <div key={idx} className="p-4 m-4 bg-white rounded-2xl shadow-md">
-          <div className="flex justify-between">
-            <p>
-              {file.name} ({file.type}) - {file.tables?.length || 0} tabelas
-            </p>
-            <span className="cursor-pointer">🗑</span>
-          </div>
-          {file.message && <p className="text-red-500">{file.message}</p>}
-          {file.tables?.map((table, tIdx) => (
-            <table
-              key={tIdx}
-              className="w-full border-collapse border mt-2 text-sm"
-            >
+      {/* Pre-visualização */}
+      <div className="bg-white p-4 rounded-xl mb-4">
+        {filesData?.map((file, idx) => (
+          <div key={idx} className="border-b border-gray-200 mb-2 pb-2">
+            <div className="flex justify-between items-center mb-1">
+              <span>{file.name} ({file.headers?.length} colunas, {file.rows?.length} linhas)</span>
+              <FaTrash className="cursor-pointer" onClick={() => removeFile(file.name)} />
+            </div>
+            <table className="w-full table-auto border-collapse text-sm">
+              <thead>
+                <tr className="bg-gray-200">
+                  {file.headers?.map((h, i) => <th key={i} className="border px-1">{h}</th>)}
+                </tr>
+              </thead>
               <tbody>
-                {table.rows?.slice(0, 5)?.map((row, rIdx) => (
-                  <tr
-                    key={rIdx}
-                    className={rIdx % 2 === 0 ? "bg-gray-100" : "bg-white"}
-                  >
-                    {row.map((cell, cIdx) => (
-                      <td key={cIdx} className="border px-2 py-1">
-                        {cell}
-                      </td>
-                    ))}
+                {file.rows?.map((row, i) => (
+                  <tr key={i} className={i % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                    {row.map((c, j) => <td key={j} className="border px-1">{c}</td>)}
                   </tr>
                 ))}
               </tbody>
             </table>
-          ))}
-        </div>
-      ))}
-
-      {/* ---- RELATIONS ---- */}
-      <div className="p-4 m-4 bg-white rounded-2xl shadow-md">
-        <h3 className="font-bold mb-2">Relacionar ficheiros</h3>
-        <button
-          onClick={handleAutoRelations}
-          className="px-2 py-1 bg-green-500 text-white rounded"
-        >
-          Relacionar automaticamente
-        </button>
-        <div className="mt-2">
-          {autoRelations?.map((rel, idx) => (
-            <p key={idx}>
-              {rel.files[0]} ↔ {rel.files[1]} | Colunas:{" "}
-              {rel.columns.join(", ")}
-            </p>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
-      {/* ---- FIXED BUTTON ---- */}
-      <a
-        href="#"
-        className="fixed bottom-4 right-4 px-4 py-2 bg-blue-600 text-white rounded-2xl shadow-md"
-      >
-        Serviços
-      </a>
+      {/* Relacionar colunas */}
+      <div className="bg-white p-4 rounded-xl mb-4">
+        <div className="flex justify-between mb-2">
+          <span className="font-semibold">Relacionar colunas</span>
+          {filesData.length > 1 && (
+            <button onClick={autoRelateFiles} className="bg-green-500 text-white px-2 py-1 rounded">Relacionar automaticamente</button>
+          )}
+        </div>
+        {filesData?.map((file, idx) => (
+          <div key={idx} className="mb-2 border-b border-gray-200 pb-1">
+            <div>{file.name}</div>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {(relations[file.name] || autoRelations[file.name]?.columns || []).map((col, i) => (
+                <span key={i} className="bg-blue-200 px-2 py-0.5 rounded">{col}</span>
+              ))}
+              {autoRelations[file.name]?.table && (
+                <span className="text-gray-500 ml-2">(Tabela: {autoRelations[file.name].table})</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {/* ---- FOOTER ---- */}
-      <footer className="text-center text-xs p-4">2025 Klinos Insight</footer>
+      {/* Botão Serviços fixo */}
+      <a href="#servicos" className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">Serviços</a>
+
+      {/* Footer */}
+      <footer className="text-center mt-6 text-xs text-gray-500">2025 Klinos Insight</footer>
     </div>
   );
 }
