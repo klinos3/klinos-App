@@ -346,20 +346,21 @@ const autoRelateFiles = () => {
 
   {/* --- Mostrar relações --- */}
   {Object.keys(relations).length > 0 && (
-    <div className="mt-4 p-3 bg-gray-50 rounded border">
-      <h4 className="font-semibold mb-2">Colunas relacionadas:</h4>
-      <ul className="text-sm">
-        {Object.entries(relations).map(([file, col], idx) => {
-          const tableName = autoRelations[file] || "Sem relação";
-          return (
-            <li key={idx}>
-              <strong>{file}</strong> → {col || "nenhuma coluna escolhida"} (Tabela: {tableName})
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  )}
+  <div className="mt-4 p-3 bg-gray-50 rounded border">
+    <h4 className="font-semibold mb-2">Colunas relacionadas:</h4>
+    <ul className="text-sm">
+      {Object.entries(relations).map(([file, col], idx) => {
+        const tableName = autoRelations[file] || "Sem relação";
+        return (
+          <li key={idx}>
+            <strong>{file}</strong> → {col || "nenhuma coluna escolhida"} (Tabela: {tableName})
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+)}
+
 </section>
 
 
