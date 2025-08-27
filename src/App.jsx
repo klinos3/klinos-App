@@ -34,79 +34,46 @@ export default function App() {
   const validExtensions = [".csv", ".txt", ".json", ".xlsx", ".pdf"];
 
   // Função de upload
-  const handleFileUpload = async (e) => {
-    const selected = Array.from(e.target.files || []);
-    if (!selected.length) return;
+const handleFileUpload = async (e) => {
+  const file = e.target.files[0];
+  const reader = new FileReader();
 
-    // Verificar ficheiros não suportados
-    const invalidFile = selected.find(
-      (f) => !validExtensions.some((ext) => f.name.toLowerCase().endsWith(ext))
-    );
-    if (invalidFile) {
-      setUploadMessage("Ficheiro não suportado");
-      return;
+  reader.onload = async (evt) => {
+    let parsedData = [];
+
+    // CSV ou TXT
+    if (file.name.endsWith(".csv") || file.name.endsWith(".txt")) {
+      parsedData = Papa.parse(evt.target.result, { header: true }).data;
+    }
+    // JSON
+    else if (file.name.endsWith(".json")) {
+      parsedData = JSON.parse(evt.target.result);
+    }
+    // XLSX
+    else if (file.name.endsWith(".xlsx")) {
+      const workbook = XLSX.read(evt.target.result, { type: "binary" });
+      const sheetName = workbook.SheetNames[0];
+      parsedData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
     }
 
-    setUploadMessage(""); // limpar mensagem se ficheiros válidos
+    // 👉 Garante que SEMPRE tens columns e rows
+    const newFile = {
+      fileName: file.name,
+      columns: parsedData.length > 0 ? Object.keys(parsedData[0]) : [],
+      rows: parsedData
+    };
 
-    const readers = selected.map(
-      (file) =>
-        new Promise((resolve) => {
-          const reader = new FileReader();
-          const name = file.name;
-
-          reader.onload = (ev) => {
-            const text = ev.target.result;
-
-            if (name.toLowerCase().endsWith(".csv")) {
-              const lines = text.split(/\r\n|\n/).filter((l) => l.length);
-              const headers = lines[0].split(",").map((h) => h.trim());
-              const rows = lines.slice(1).map((line) => line.split(",").map((c) => c.trim()));
-              resolve({ name, headers, rows });
-              return;
-            }
-
-            if (name.toLowerCase().endsWith(".json")) {
-              try {
-                const data = JSON.parse(text);
-                const headers = Object.keys(data[0] || {});
-                const rows = data.map((row) => headers.map((h) => String(row[h] ?? "")));
-                resolve({ name, headers, rows });
-              } catch {
-                resolve({
-                  name,
-                  headers: ["Conteúdo"],
-                  rows: text.split(/\r\n|\n/).map((l) => [l]),
-                });
-              }
-              return;
-            }
-
-            if (name.toLowerCase().endsWith(".txt")) {
-              resolve({
-                name,
-                headers: ["Conteúdo"],
-                rows: text.split(/\r\n|\n/).map((l) => [l]),
-              });
-              return;
-            }
-
-            // XLSX e PDF - placeholder
-            resolve({
-              name,
-              headers: ["Aviso"],
-              rows: [["Pré-visualização será ativada na próxima etapa."]],
-            });
-          };
-
-          reader.readAsText(file);
-        })
-    );
-
-    const parsed = await Promise.all(readers);
-    setFilesData((prev) => [...prev, ...parsed]);
-    e.target.value = "";
+    // 👉 Adiciona ao state
+    setFilesData((prev) => [...prev, newFile]);
   };
+
+  if (file.name.endsWith(".xlsx")) {
+    reader.readAsBinaryString(file);
+  } else {
+    reader.readAsText(file);
+  }
+};
+
 
   // Remover ficheiro
   const removeFile = (name) => {
