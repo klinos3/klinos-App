@@ -28,6 +28,7 @@ export default function App() {
   const [jsonExpanded, setJsonExpanded] = useState(false);
   const [filesData, setFilesData] = useState([]);
   const [relations, setRelations] = useState({});
+  const [autoRelations, setAutoRelations] = useState({}); // <-- esta linha
   const [uploadMessage, setUploadMessage] = useState("Nenhum ficheiro selecionado");
 
   const validExtensions = [".csv", ".txt", ".json", ".xlsx", ".pdf"];
