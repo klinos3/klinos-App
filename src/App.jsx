@@ -326,7 +326,23 @@ const autoRelateFiles = () => {
   </div>
 
   {/* --- Relacionar automaticamente --- */}
-  {filesData.length > 1 && (
+{filesData.length > 1 && (
+  <div className="p-4 border rounded mb-4 relative">
+    <h2 className="text-lg font-semibold mb-2">Relacionar colunas</h2>
+
+    {/* Botão de apagar tudo */}
+    <button
+      onClick={() => {
+        setRelations({});
+        setAutoRelations({});
+      }}
+      className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+      title="Apagar todas as relações"
+    >
+      🗑️
+    </button>
+
+    {/* Botão de relação automática */}
     <div className="flex justify-start mt-2 mb-4">
       <button
         onClick={autoRelateFiles}
@@ -334,32 +350,46 @@ const autoRelateFiles = () => {
       >
         Relacionar automaticamente
       </button>
-      <button
-        onClick={() => setRelations({})}
-        className="ml-2 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
-        title="Apagar todas relações"
-      >
-        🗑️
-      </button>
     </div>
-  )}
 
-  {/* --- Mostrar relações --- */}
-  {Object.keys(relations).length > 0 && (
-  <div className="mt-4 p-3 bg-gray-50 rounded border">
-    <h4 className="font-semibold mb-2">Colunas relacionadas:</h4>
-    <ul className="text-sm">
-      {Object.entries(relations).map(([file, col], idx) => {
-        const tableName = autoRelations[file] || "Sem relação";
-        return (
-          <li key={idx}>
-            <strong>{file}</strong> → {col || "nenhuma coluna escolhida"} (Tabela: {tableName})
+    {/* Seleção manual */}
+    {filesData.map((file) => (
+      <div key={file.fileName} className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">
+          {file.fileName}
+        </label>
+        <select
+          value={relations[file.fileName] || ""}
+          onChange={(e) =>
+            setRelationForFile(file.fileName, e.target.value)
+          }
+          className="mt-1 p-2 border rounded w-full"
+        >
+          <option value="">-- Selecione coluna para relacionar --</option>
+          {file.columns.map((col) => (
+            <option key={col} value={col}>
+              {col}
+            </option>
+          ))}
+        </select>
+      </div>
+    ))}
+
+    {/* Mostrar relações */}
+    <div className="mt-4">
+      <h3 className="font-medium">Colunas relacionadas:</h3>
+      <ul className="list-disc ml-6">
+        {Object.keys(relations).map((file) => (
+          <li key={file}>
+            {file} → {relations[file] || "nenhuma coluna escolhida"} (Tabela:{" "}
+            {autoRelations[file] || Object.keys(relations).find((f) => f !== file) || "Sem relação"})
           </li>
-        );
-      })}
-    </ul>
+        ))}
+      </ul>
+    </div>
   </div>
 )}
+
 
 </section>
 
