@@ -124,22 +124,20 @@ export default function App() {
     setUploadMessage("Nenhum ficheiro selecionado");
   };
 
-  // Relacionar colunas manualmente
-  const setRelationForFile = (fileName, col) => {
-    setRelations((prev) => ({ ...prev, [fileName]: col }));
-  };
+const setRelationForFile = (fileName, col, tableName = null) => {
+  setRelations((prev) => {
+    const prevCols = Array.isArray(prev[fileName]?.columns) ? prev[fileName].columns : [];
+    return {
+      ...prev,
+      [fileName]: {
+        columns: [...prevCols, col].filter(Boolean), // adiciona a nova coluna
+        table: tableName, // tabela em comum
+      },
+    };
+  });
+};
 
-  // Relacionamento automático (primeira coluna comum)
-  const autoRelateFiles = () => {
-    if (filesData.length < 2) return;
-    const baseFile = filesData[0];
-    const newRelations = {};
-    filesData.slice(1).forEach((file) => {
-      const commonCols = baseFile.headers.filter((h) => file.headers.includes(h));
-      if (commonCols.length) newRelations[file.name] = commonCols[0];
-    });
-    setRelations(newRelations);
-  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-200 via-green-100 to-purple-200 p-6">
@@ -308,18 +306,24 @@ export default function App() {
           <p className="text-gray-600 italic">Carregue pelo menos 2 ficheiros para relacionar colunas.</p>
         )}
 
+        {/* Mostrar relações de colunas */}
         {Object.keys(relations).length > 0 && (
           <div className="mt-4 p-3 bg-gray-50 rounded border">
             <h4 className="font-semibold mb-2">Colunas relacionadas:</h4>
             <ul className="text-sm">
-              {Object.entries(relations).map(([file, col], idx) => (
+              {Object.entries(relations).map(([file, cols], idx) => (
                 <li key={idx}>
-                  <strong>{file}</strong> → {col || "nenhuma coluna escolhida"}
+                  <strong>{file}</strong> →{" "}
+                  {Array.isArray(cols) && cols.length > 0
+                    ? cols.join(", ") // mostra todas as colunas relacionadas
+                    : "nenhuma coluna escolhida"}
+                  {cols.table && ` (Tabela: ${cols.table})`} {/* se existir tabela em comum */}
                 </li>
-              ))}
+               ))}
             </ul>
           </div>
         )}
+
       </section>
 
       {/* Botão Serviços sempre visível no canto inferior direito */}
