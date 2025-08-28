@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import * as pdfjsLib from "pdfjs-dist";
-import "pdfjs-dist/build/pdf.worker.entry";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.js`;
 
