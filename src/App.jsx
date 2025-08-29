@@ -218,31 +218,51 @@ const App = () => {
         ))}
       </div>
 
-      {/* Relacionar colunas */}
-      <div className="mb-6 p-4 bg-white rounded-xl shadow">
-        <div className="flex justify-between items-center mb-2">
-          <span>Relacionar Colunas</span>
-          <button onClick={clearAllRelations} className="px-2 py-1 bg-red-500 text-white rounded">Limpar todas relações</button>
-        </div>
-        <div className="flex space-x-2 mb-2">
-          <button onClick={autoRelateFiles} className="px-2 py-1 bg-green-500 text-white rounded">Relacionar automaticamente</button>
-          <button className="px-2 py-1 bg-blue-500 text-white rounded">Relacionar manualmente</button>
-        </div>
-        <p className="text-sm mb-2 text-gray-600">Relaciona com base em colunas com o mesmo nome</p>
-        <p className="text-sm mb-2 text-gray-600">Escolha as colunas que quer relacionar</p>
-        {Object.keys(relations).map((f1) => (
-          <div key={f1} className="mb-2">
-            <strong>{f1}:</strong>
-            <ul className="ml-4 list-disc">
-              {Object.entries(relations[f1]).map(([f2, cols]) => (
-                <li key={f2}>
-                  {f2}: {cols.join(", ")}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
+{/* Secção Relacionar Colunas */}
+<div className="mt-8 p-6 bg-white rounded-2xl shadow-md">
+  <h2 className="text-xl font-bold mb-4">Relacionar Colunas</h2>
+
+  {/* Botão Mapear Colunas ao Seu Critério */}
+  <div className="mb-6">
+    <button
+      className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition"
+    >
+      Mapear Colunas ao Seu Critério
+    </button>
+    <p className="text-gray-600 text-sm mt-2">
+      Selecione manualmente as colunas que deseja relacionar entre diferentes ficheiros. 
+      Ideal quando procura <strong>controlo total</strong> sobre as ligações.
+    </p>
+  </div>
+
+  {/* Botão Sugerir Mapeamento Inteligente */}
+  <div className="mb-6">
+    <button
+      onClick={handleAutoRelate} // mantém a tua função já existente!
+      className="w-full bg-green-600 text-white py-2 rounded-xl hover:bg-green-700 transition"
+    >
+      Sugerir Mapeamento Inteligente
+    </button>
+    <p className="text-gray-600 text-sm mt-2">
+      A aplicação analisa os ficheiros e propõe automaticamente as relações mais prováveis, 
+      com base em nomes semelhantes e padrões de dados.
+    </p>
+  </div>
+
+  {/* Botão Configurar Relações Avançadas */}
+  <div>
+    <button
+      className="w-full bg-purple-600 text-white py-2 rounded-xl hover:bg-purple-700 transition"
+    >
+      Configurar Relações Avançadas
+    </button>
+    <p className="text-gray-600 text-sm mt-2">
+      Defina relações mais complexas (<strong>1:N, N:N</strong>) ou baseadas em regras de negócio específicas, 
+      para análises mais detalhadas.
+    </p>
+  </div>
+</div>
+
 
       {/* Botão Serviços */}
       <div className="fixed bottom-4 right-4">
