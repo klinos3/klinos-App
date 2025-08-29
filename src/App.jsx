@@ -10,7 +10,7 @@ const App = () => {
   const [uploadMessage, setUploadMessage] = useState("Nenhum ficheiro selecionado");
   const [jsonData, setJsonData] = useState("");
   const [previewJson, setPreviewJson] = useState([]);
-  const [relations, setRelations] = useState({});
+
   {/* Secção Relacionar Colunas */}
 <div className="mt-8 p-6 bg-white rounded-2xl shadow-md">
   <h2 className="text-xl font-bold mb-4">Relacionar Colunas</h2>
