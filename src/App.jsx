@@ -319,105 +319,105 @@ const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
 
 {/* ===================== RELACIONAR COLUNAS ===================== */}
 {/* Secção Relacionar Colunas */}
-<section className="mt-8 p-6 bg-gray-50 rounded-xl shadow">
-  <h2 className="text-xl font-semibold mb-4 text-gray-800">Relacionar Colunas</h2>
+<div className="p-6 bg-gray-100 rounded-xl shadow-inner mt-6">
+  <h2 className="text-xl font-bold mb-4">Relacionar Colunas</h2>
+  <p className="text-sm text-gray-600 mb-4">
+    Escolha como deseja mapear e relacionar colunas entre os ficheiros carregados.
+  </p>
 
-  {/* Bloco 1 - Mapeamento Manual */}
-  <div className="mb-6 p-4 bg-white border rounded-lg shadow-sm">
-    <h3 className="text-lg font-medium text-gray-700">Mapear Colunas ao Seu Critério</h3>
-    <p className="text-sm text-gray-500 mb-2">
-      Selecione manualmente as colunas que deseja relacionar entre diferentes ficheiros. 
-      Ideal quando procura controlo total sobre as ligações.
+  {/* Retângulo 1 – Mapear Colunas ao Seu Critério */}
+  <div className="border p-4 rounded-lg shadow bg-white mb-4">
+    <h3 className="font-semibold text-lg mb-2">Mapear Colunas ao Seu Critério</h3>
+    <p className="text-sm text-gray-600 mb-3">
+      Selecione manualmente as colunas que deseja relacionar entre diferentes ficheiros.
     </p>
-    <button
-      onClick={() => setShowManualMapping(!showManualMapping)}
-      className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
-    >
-      Mapear Colunas ao Seu Critério
-    </button>
 
-    {showManualMapping && (
-      <div className="mt-4 p-3 border rounded bg-gray-50">
-        {Object.keys(files).map((fileName, idx) => (
-          <div key={idx} className="mb-4">
-            <h4 className="font-medium text-gray-600">{fileName}</h4>
-            <div className="flex flex-col gap-2">
-              {files[fileName].columns &&
-                files[fileName].columns.map((col, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <input type="checkbox" id={`${fileName}-${col}`} />
-                    <label htmlFor={`${fileName}-${col}`} className="text-sm">
-                      {col}
-                    </label>
-                  </div>
-                ))}
-            </div>
-          </div>
-        ))}
+    {/* Exemplo de interface manual em pares */}
+    <div className="grid grid-cols-2 gap-6">
+      {/* Ficheiro 1 */}
+      <div>
+        <strong>vendas.xlsx</strong>
+        <select className="mt-2 block w-full border rounded p-2">
+          <option>Selecionar coluna</option>
+          <option>ID_Venda</option>
+          <option>Data</option>
+          <option>Total</option>
+        </select>
       </div>
-    )}
+
+      {/* Ficheiro 2 */}
+      <div>
+        <strong>empregados.pdf</strong>
+        <select className="mt-2 block w-full border rounded p-2">
+          <option>Selecionar coluna</option>
+          <option>EmployeeID</option>
+          <option>Nome</option>
+          <option>Departamento</option>
+        </select>
+      </div>
+
+      {/* Ficheiro 3 */}
+      <div>
+        <strong>lojas.csv</strong>
+        <select className="mt-2 block w-full border rounded p-2">
+          <option>Selecionar coluna</option>
+          <option>StoreKey</option>
+          <option>NomeLoja</option>
+        </select>
+      </div>
+
+      {/* Ficheiro 4 */}
+      <div>
+        <strong>lucros.csv</strong>
+        <select className="mt-2 block w-full border rounded p-2">
+          <option>Selecionar coluna</option>
+          <option>Ano</option>
+          <option>LucroTotal</option>
+        </select>
+      </div>
+    </div>
   </div>
 
-  {/* Bloco 2 - Mapeamento Inteligente */}
-  <div className="mb-6 p-4 bg-white border rounded-lg shadow-sm">
-    <h3 className="text-lg font-medium text-gray-700">Sugerir Mapeamento Inteligente</h3>
-    <p className="text-sm text-gray-500 mb-2">
-      A aplicação analisa os ficheiros e propõe automaticamente as relações mais prováveis, 
-      com base em nomes semelhantes e padrões de dados.
+  {/* Retângulo 2 – Sugerir Mapeamento Inteligente */}
+  <div className="border p-4 rounded-lg shadow bg-white mb-4">
+    <h3 className="font-semibold text-lg mb-2">Sugerir Mapeamento Inteligente</h3>
+    <p className="text-sm text-gray-600 mb-3">
+      A aplicação analisa os ficheiros e propõe automaticamente as relações mais prováveis.
     </p>
     <button
       onClick={handleAutoRelate}
-      className="px-4 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700"
+      className="px-4 py-2 bg-blue-600 text-white rounded shadow"
     >
       Sugerir Mapeamento Inteligente
     </button>
 
-    {/* Mostrar relações simplificadas */}
-    <div className="mt-4 p-3 border rounded bg-gray-50">
-      <h4 className="font-medium text-gray-600 mb-2">Relações encontradas:</h4>
-      {relations.length > 0 ? (
-        <ul className="list-disc list-inside text-sm text-gray-700">
+    {/* Relações encontradas – formato tabular */}
+    {relations.length > 0 && (
+      <div className="mt-3 text-sm text-gray-700">
+        <h4 className="font-semibold">Relações encontradas:</h4>
+        <pre className="bg-gray-50 p-2 rounded mt-1">
           {relations.map((rel, idx) => (
-            <li key={idx}>{rel}</li>
+            <div key={idx}>{rel}</div>
           ))}
-        </ul>
-      ) : (
-        <p className="text-sm text-gray-500 italic">Sem relações encontradas</p>
-      )}
-    </div>
-  </div>
-
-  {/* Bloco 3 - Configuração Avançada */}
-  <div className="p-4 bg-white border rounded-lg shadow-sm">
-    <h3 className="text-lg font-medium text-gray-700">Configurar Relações Avançadas</h3>
-    <p className="text-sm text-gray-500 mb-2">
-      Defina relações mais complexas (1:N, N:N) ou baseadas em regras de negócio específicas.
-    </p>
-    <button
-      onClick={() => setShowAdvancedConfig(!showAdvancedConfig)}
-      className="px-4 py-2 bg-purple-600 text-white rounded shadow hover:bg-purple-700"
-    >
-      Configurar Relações Avançadas
-    </button>
-
-    {showAdvancedConfig && (
-      <div className="mt-4 p-3 border rounded bg-gray-50">
-        <p className="text-sm text-gray-600 mb-2">Selecione o tipo de relação:</p>
-        <select className="border rounded px-2 py-1 text-sm">
-          <option>Um para Muitos (1:N)</option>
-          <option>Muitos para Muitos (N:N)</option>
-        </select>
-        <button
-          className="mt-3 px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-sm"
-        >
-          Guardar Relação Avançada
-        </button>
+        </pre>
       </div>
     )}
   </div>
-</section>
 
-
+  {/* Retângulo 3 – Configurar Relações Avançadas */}
+  <div className="border p-4 rounded-lg shadow bg-white">
+    <h3 className="font-semibold text-lg mb-2">Configurar Relações Avançadas</h3>
+    <p className="text-sm text-gray-600 mb-3">
+      Defina relações mais complexas (1:N, N:N) ou baseadas em regras de negócio específicas.
+    </p>
+    <button
+      onClick={() => alert("Configuração avançada em construção")}
+      className="px-4 py-2 bg-green-600 text-white rounded shadow"
+    >
+      Configurar Relações Avançadas
+    </button>
+  </div>
+</div>
 
       {/* Botão Serviços */}
       <div className="fixed bottom-4 right-4">
