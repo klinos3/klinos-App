@@ -6,11 +6,21 @@ import * as pdfjsLib from "pdfjs-dist";
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.js`;
 
 const App = () => {
+  const [relations, setRelations] = useState([]);
+  const [showManual, setShowManual] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const [selectedFileA, setSelectedFileA] = useState("");
+  const [selectedFileB, setSelectedFileB] = useState("");
+  const [selectedColA, setSelectedColA] = useState("");
+  const [selectedColB, setSelectedColB] = useState("");
+  const [relationType, setRelationType] = useState("");
+
   const [filesData, setFilesData] = useState([]);
   const [uploadMessage, setUploadMessage] = useState("Nenhum ficheiro selecionado");
   const [jsonData, setJsonData] = useState("");
   const [previewJson, setPreviewJson] = useState([]);
-  const [relations, setRelations] = useState({});
+
   const [expandedJson, setExpandedJson] = useState(false);
 
   const validExtensions = [".csv", ".txt", ".json", ".xlsx", ".pdf"];
@@ -294,13 +304,15 @@ const App = () => {
         ))}
       </div>
 
-      {/* Relacionar Colunas (CORRETO: dentro do return) */}
-     {/* ===================== RELACIONAR COLUNAS ===================== */}
+{/* ===================== RELACIONAR COLUNAS ===================== */}
 <div className="bg-white p-6 rounded-2xl shadow-md mb-8">
   <h2 className="text-2xl font-bold mb-4">Relacionar Colunas</h2>
   
   {/* Botão para limpar relações */}
-  <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl mb-6">
+  <button 
+    onClick={() => setRelations([])} 
+    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl mb-6"
+  >
     Limpar Relações
   </button>
 
@@ -312,14 +324,75 @@ const App = () => {
       Ideal quando procura controlo total sobre as ligações.
     </p>
 
-    <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl mb-4">
+    <button 
+      onClick={() => setShowManual(prev => !prev)} 
+      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl mb-4"
+    >
       Mapear Colunas ao Seu Critério
     </button>
 
-    {/* Aqui vai aparecer a lista de ficheiros/colunas para escolher manualmente */}
-    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <p className="text-gray-500 italic">[Área para escolher colunas manualmente]</p>
-    </div>
+    {showManual && (
+      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+        {Object.keys(files).length < 2 ? (
+          <p className="text-gray-500 italic">Carregue pelo menos 2 ficheiros para mapear manualmente.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <select 
+                className="border p-2 rounded"
+                onChange={(e) => setSelectedFileA(e.target.value)}
+                value={selectedFileA}
+              >
+                <option value="">Escolha Ficheiro A</option>
+                {Object.keys(files).map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+              <select 
+                className="border p-2 rounded"
+                onChange={(e) => setSelectedFileB(e.target.value)}
+                value={selectedFileB}
+              >
+                <option value="">Escolha Ficheiro B</option>
+                {Object.keys(files).map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+
+            {selectedFileA && selectedFileB && (
+              <div className="flex gap-4">
+                <select 
+                  className="border p-2 rounded"
+                  onChange={(e) => setSelectedColA(e.target.value)}
+                  value={selectedColA}
+                >
+                  <option value="">Coluna em {selectedFileA}</option>
+                  {files[selectedFileA].columns.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+
+                <select 
+                  className="border p-2 rounded"
+                  onChange={(e) => setSelectedColB(e.target.value)}
+                  value={selectedColB}
+                >
+                  <option value="">Coluna em {selectedFileB}</option>
+                  {files[selectedFileB].columns.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+
+                <button 
+                  onClick={() => {
+                    if (selectedColA && selectedColB) {
+                      setRelations(prev => [...prev, { fileA: selectedFileA, colA: selectedColA, fileB: selectedFileB, colB: selectedColB }]);
+                      setSelectedColA(""); setSelectedColB("");
+                    }
+                  }} 
+                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded"
+                >
+                  Adicionar Relação
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )}
   </div>
 
   {/* ===================== BLOCO 2 – MAPEAMENTO AUTOMÁTICO ===================== */}
@@ -330,13 +403,40 @@ const App = () => {
       com base em nomes semelhantes e padrões de dados.
     </p>
 
-    <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl mb-4">
+    <button 
+      onClick={() => {
+        const suggestions = [];
+        const fileNames = Object.keys(files);
+        for (let i = 0; i < fileNames.length; i++) {
+          for (let j = i + 1; j < fileNames.length; j++) {
+            const fA = fileNames[i];
+            const fB = fileNames[j];
+            files[fA].columns.forEach(colA => {
+              if (files[fB].columns.includes(colA)) {
+                suggestions.push({ fileA: fA, colA, fileB: fB, colB: colA });
+              }
+            });
+          }
+        }
+        setRelations(prev => [...prev, ...suggestions]);
+      }} 
+      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl mb-4"
+    >
       Sugerir Mapeamento Inteligente
     </button>
 
-    {/* Aqui vai aparecer o resultado do mapeamento automático */}
     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <p className="text-gray-500 italic">[Relações automáticas encontradas aparecerão aqui]</p>
+      {relations.length === 0 ? (
+        <p className="text-gray-500 italic">Nenhuma relação encontrada ainda.</p>
+      ) : (
+        <ul className="list-disc list-inside text-gray-700">
+          {relations.map((r, idx) => (
+            <li key={idx}>
+              {r.fileA} ({r.colA}) ↔ {r.fileB} ({r.colB})
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   </div>
 
@@ -347,15 +447,54 @@ const App = () => {
       Defina relações mais complexas (1:N, N:N) ou baseadas em regras de negócio específicas.
     </p>
 
-    <button className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl mb-4">
+    <button 
+      onClick={() => setShowAdvanced(prev => !prev)} 
+      className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl mb-4"
+    >
       Configurar Relações Avançadas
     </button>
 
-    {/* Aqui vai aparecer a configuração de relações avançadas */}
-    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <p className="text-gray-500 italic">[Configurações avançadas aparecerão aqui]</p>
-    </div>
+    {showAdvanced && (
+      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+        <select 
+          className="border p-2 rounded"
+          onChange={(e) => setRelationType(e.target.value)}
+          value={relationType}
+        >
+          <option value="">Escolha tipo de relação</option>
+          <option value="1-1">Um para Um (1:1)</option>
+          <option value="1-N">Um para Muitos (1:N)</option>
+          <option value="N-N">Muitos para Muitos (N:N)</option>
+        </select>
+
+        <button 
+          onClick={() => {
+            if (relationType) {
+              setRelations(prev => [...prev, { type: relationType, custom: true }]);
+              setRelationType("");
+            }
+          }} 
+          className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded"
+        >
+          Guardar Relação Avançada
+        </button>
+      </div>
+    )}
   </div>
 </div>
+
+
+      {/* Botão Serviços */}
+      <div className="fixed bottom-4 right-4">
+        <a href="/servicos" className="px-4 py-2 bg-purple-600 text-white rounded shadow">
+          Serviços
+        </a>
+      </div>
+
+      {/* Footer */}
+      <footer className="mt-12 text-center text-xs text-gray-600">Klinos Insight</footer>
+    </div>
+  );
+};
 
 export default App;
