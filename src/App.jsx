@@ -379,30 +379,27 @@ const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
   </div>
 
   {/* Retângulo 2 – Sugerir Mapeamento Inteligente */}
-  <div className="border p-4 rounded-lg shadow bg-white mb-4">
-    <h3 className="font-semibold text-lg mb-2">Sugerir Mapeamento Inteligente</h3>
-    <p className="text-sm text-gray-600 mb-3">
-      A aplicação analisa os ficheiros e propõe automaticamente as relações mais prováveis.
-    </p>
-    <button
-      onClick={handleAutoRelate}
-      className="px-4 py-2 bg-blue-600 text-white rounded shadow"
-    >
-      Sugerir Mapeamento Inteligente
-    </button>
-
-    {/* Relações encontradas – formato tabular */}
-    {relations.length > 0 && (
-      <div className="mt-3 text-sm text-gray-700">
-        <h4 className="font-semibold">Relações encontradas:</h4>
-        <pre className="bg-gray-50 p-2 rounded mt-1">
-          {relations.map((rel, idx) => (
-            <div key={idx}>{rel}</div>
+  {/* Relações encontradas – layout em colunas */}
+{relations.length > 0 && (
+  <div className="mt-3 text-sm text-gray-700">
+    <h4 className="font-semibold mb-2">Relações encontradas:</h4>
+    <div className="grid grid-cols-4 gap-4 bg-gray-50 p-3 rounded">
+      {relations.map((rel, idx) => (
+        <React.Fragment key={idx}>
+          {rel.files.map((f, i) => (
+            <div key={i} className="truncate">{f}</div>
           ))}
-        </pre>
-      </div>
-    )}
+          {/* Preenche colunas vazias caso a relação tenha menos ficheiros */}
+          {Array.from({ length: 3 - rel.files.length }).map((_, i) => (
+            <div key={`empty-${i}`} />
+          ))}
+          <div className="font-medium text-gray-600">: {rel.key}</div>
+        </React.Fragment>
+      ))}
+    </div>
   </div>
+)}
+
 
   {/* Retângulo 3 – Configurar Relações Avançadas */}
   <div className="border p-4 rounded-lg shadow bg-white">
