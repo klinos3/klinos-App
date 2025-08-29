@@ -379,8 +379,20 @@ const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
   </div>
 
   {/* Retângulo 2 – Sugerir Mapeamento Inteligente */}
-  {/* Relações encontradas – layout em colunas */}
-{relations.length > 0 && (
+  <div className="border p-4 rounded-lg shadow bg-white mb-4">
+    <h3 className="font-semibold text-lg mb-2">Sugerir Mapeamento Inteligente</h3>
+    <p className="text-sm text-gray-600 mb-3">
+      A aplicação analisa os ficheiros e propõe automaticamente as relações mais prováveis.
+    </p>
+    <button
+      onClick={handleAutoRelate}
+      className="px-4 py-2 bg-blue-600 text-white rounded shadow"
+    >
+      Sugerir Mapeamento Inteligente
+    </button>
+
+   {/* Relações encontradas – layout em colunas */}
+    {relations.length > 0 && (
   <div className="mt-3 text-sm text-gray-700">
     <h4 className="font-semibold mb-2">Relações encontradas:</h4>
     <div className="grid grid-cols-4 gap-4 bg-gray-50 p-3 rounded">
@@ -426,7 +438,8 @@ const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
       {/* Footer */}
       <footer className="mt-12 text-center text-xs text-gray-600">Klinos Insight</footer>
     </div>
-  );
+  </div> 
+);
 };
 
 export default App;
