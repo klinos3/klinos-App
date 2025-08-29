@@ -24,6 +24,13 @@ const App = () => {
     );
     if (invalidFile) {
       setUploadMessage("Ficheiro não suportado");
+
+      // Função placeholder só para evitar erro
+const handleAutoRelate = () => {
+  console.log("Relacionamento automático ainda não implementado.");
+  alert("🚀 O sistema vai sugerir relações automáticas em breve!");
+};
+
       return;
     }
     setUploadMessage("");
