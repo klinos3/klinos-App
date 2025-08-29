@@ -11,6 +11,51 @@ const App = () => {
   const [jsonData, setJsonData] = useState("");
   const [previewJson, setPreviewJson] = useState([]);
   const [relations, setRelations] = useState({});
+  {/* Secção Relacionar Colunas */}
+<div className="mt-8 p-6 bg-white rounded-2xl shadow-md">
+  <h2 className="text-xl font-bold mb-4">Relacionar Colunas</h2>
+
+  {/* Botão Mapear Colunas ao Seu Critério */}
+  <div className="mb-6">
+    <button
+      className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition"
+    >
+      Mapear Colunas ao Seu Critério
+    </button>
+    <p className="text-gray-600 text-sm mt-2">
+      Selecione manualmente as colunas que deseja relacionar entre diferentes ficheiros. 
+      Ideal quando procura <strong>controlo total</strong> sobre as ligações.
+    </p>
+  </div>
+
+  {/* Botão Sugerir Mapeamento Inteligente */}
+  <div className="mb-6">
+    <button
+      onClick={handleAutoRelate} // mantém a tua função já existente!
+      className="w-full bg-green-600 text-white py-2 rounded-xl hover:bg-green-700 transition"
+    >
+      Sugerir Mapeamento Inteligente
+    </button>
+    <p className="text-gray-600 text-sm mt-2">
+      A aplicação analisa os ficheiros e propõe automaticamente as relações mais prováveis, 
+      com base em nomes semelhantes e padrões de dados.
+    </p>
+  </div>
+
+  {/* Botão Configurar Relações Avançadas */}
+  <div>
+    <button
+      className="w-full bg-purple-600 text-white py-2 rounded-xl hover:bg-purple-700 transition"
+    >
+      Configurar Relações Avançadas
+    </button>
+    <p className="text-gray-600 text-sm mt-2">
+      Defina relações mais complexas (<strong>1:N, N:N</strong>) ou baseadas em regras de negócio específicas, 
+      para análises mais detalhadas.
+    </p>
+  </div>
+</div>
+
   const [expandedJson, setExpandedJson] = useState(false);
 
   const validExtensions = [".csv", ".txt", ".json", ".xlsx", ".pdf"];
@@ -25,12 +70,7 @@ const App = () => {
     if (invalidFile) {
       setUploadMessage("Ficheiro não suportado");
 
-      // Função placeholder só para evitar erro
-const handleAutoRelate = () => {
-  console.log("Relacionamento automático ainda não implementado.");
-  alert("🚀 O sistema vai sugerir relações automáticas em breve!");
-};
-
+      
       return;
     }
     setUploadMessage("");
