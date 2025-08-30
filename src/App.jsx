@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import * as XLSX from "xlsx";
-import * as pdfjsLib from "pdfjs-dist";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
+// --- Imports para parsing ---
+import Papa from "papaparse";
+
+
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.js`;
 
@@ -18,6 +22,9 @@ const App = () => {
 
 const [showManualMapping, setShowManualMapping] = useState(false);
 const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
+
+// Estado para guardar as colunas detetadas em cada ficheiro
+const [fileColumns, setFileColumns] = useState({});
 
 
   const handleAutoRelate = () => {
@@ -38,9 +45,57 @@ const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
 
   const validExtensions = [".csv", ".txt", ".json", ".xlsx", ".pdf"];
 
-  const handleFileUpload = async (e) => {
-    const selected = Array.from(e.target.files || []);
-    if (!selected.length) return;
+  // Função que lê qualquer tipo de ficheiro e extrai colunas
+const parseFile = async (file) => {
+  let headers = [];
+
+  if (file.name.endsWith(".csv")) {
+    const text = await file.text();
+    const result = Papa.parse(text, { header: true });
+    headers = result.meta.fields || [];
+  } 
+  
+  else if (file.name.endsWith(".xlsx")) {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, { type: "array" });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    headers = XLSX.utils.sheet_to_json(firstSheet, { header: 1 })[0];
+  } 
+  
+  else if (file.name.endsWith(".json")) {
+    const text = await file.text();
+    const jsonData = JSON.parse(text);
+    headers = Object.keys(jsonData[0]);
+  } 
+  
+  else if (file.name.endsWith(".txt")) {
+    const text = await file.text();
+    headers = text.split("\n")[0].split(/\s+|,|;/); // primeira linha
+  } 
+  
+  else if (file.name.endsWith(".pdf")) {
+    const data = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjsLib.getDocument({ data }).promise;
+
+    let textContent = "";
+    const page = await pdf.getPage(1); // só primeira página
+    const text = await page.getTextContent();
+    text.items.forEach((item) => {
+      textContent += item.str + " ";
+    });
+
+    headers = textContent.split(/\s+|,|;/).slice(0, 10); // tenta pegar primeiras 10 palavras
+  }
+
+  // Atualizar estado
+  setFileColumns((prev) => ({
+    ...prev,
+    [file.name]: headers
+  }));
+};
+
+
+
 
     // validação de extensão
     const invalidFile = selected.find(
@@ -165,10 +220,6 @@ const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
         })
     );
 
-    const parsed = await Promise.all(readers);
-    setFilesData((prev) => [...prev, ...parsed]);
-    e.target.value = "";
-  };
 
   const handleJsonPreview = () => {
     try {
@@ -318,65 +369,31 @@ const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
       </div>
 
 {/* ===================== RELACIONAR COLUNAS ===================== */}
-{/* Secção Relacionar Colunas */}
-<div className="p-6 bg-gray-100 rounded-xl shadow-inner mt-6">
-  <h2 className="text-xl font-bold mb-4">Relacionar Colunas</h2>
-  <p className="text-sm text-gray-600 mb-4">
-    Escolha como deseja mapear e relacionar colunas entre os ficheiros carregados.
-  </p>
-
-  {/* Retângulo 1 – Mapear Colunas ao Seu Critério */}
-  <div className="border p-4 rounded-lg shadow bg-white mb-4">
-    <h3 className="font-semibold text-lg mb-2">Mapear Colunas ao Seu Critério</h3>
-    <p className="text-sm text-gray-600 mb-3">
-      Selecione manualmente as colunas que deseja relacionar entre diferentes ficheiros.
-    </p>
-
-    {/* Exemplo de interface manual em pares */}
-    <div className="grid grid-cols-2 gap-6">
-      {/* Ficheiro 1 */}
-      <div>
-        <strong>vendas.xlsx</strong>
-        <select className="mt-2 block w-full border rounded p-2">
-          <option>Selecionar coluna</option>
-          <option>ID_Venda</option>
-          <option>Data</option>
-          <option>Total</option>
-        </select>
+{/* ============================
+    Mapear Colunas ao Seu Critério
+============================ */}
+{/* Mapear Colunas ao Seu Critério */}
+<div className="mt-6 p-4 border rounded bg-gray-50">
+  <h2 className="text-lg font-semibold mb-2">Mapear Colunas ao Seu Critério</h2>
+  <div className="grid grid-cols-2 gap-4">
+    {Object.entries(fileColumns).map(([fileName, cols]) => (
+      <div key={fileName} className="p-2 border rounded bg-white">
+        <h3 className="font-medium">{fileName}</h3>
+        {cols.length > 0 ? (
+          <ul className="list-disc list-inside text-sm text-gray-700">
+            {cols.map((col, idx) => (
+              <li key={idx}>{col}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-gray-500">Sem colunas detetadas</p>
+        )}
       </div>
-
-      {/* Ficheiro 2 */}
-      <div>
-        <strong>empregados.pdf</strong>
-        <select className="mt-2 block w-full border rounded p-2">
-          <option>Selecionar coluna</option>
-          <option>EmployeeID</option>
-          <option>Nome</option>
-          <option>Departamento</option>
-        </select>
-      </div>
-
-      {/* Ficheiro 3 */}
-      <div>
-        <strong>lojas.csv</strong>
-        <select className="mt-2 block w-full border rounded p-2">
-          <option>Selecionar coluna</option>
-          <option>StoreKey</option>
-          <option>NomeLoja</option>
-        </select>
-      </div>
-
-      {/* Ficheiro 4 */}
-      <div>
-        <strong>lucros.csv</strong>
-        <select className="mt-2 block w-full border rounded p-2">
-          <option>Selecionar coluna</option>
-          <option>Ano</option>
-          <option>LucroTotal</option>
-        </select>
-      </div>
-    </div>
+    ))}
   </div>
+</div>
+
+
 
   {/* Retângulo 2 – Sugerir Mapeamento Inteligente */}
     {/* ============================
@@ -391,77 +408,43 @@ const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
     mais prováveis, com base em nomes semelhantes e padrões de dados.
   </p>
 
-  <button
-    onClick={handleAutoRelate}
-    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-  >
-    Sugerir Mapeamento Inteligente
-  </button>
+  <div className="flex gap-2">
+    <button
+      onClick={handleAutoRelate}
+      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+    >
+      Sugerir Mapeamento Inteligente
+    </button>
+    <button
+      onClick={() => setRelations([])}
+      className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+    >
+      Limpar Relações
+    </button>
+  </div>
 
-  {/* Relações encontradas – apenas mostra se houver algo */}
+  {/* Relações encontradas */}
   {Array.isArray(relations) && relations.length > 0 && (
     <>
       <h4 className="mt-4 font-medium">Relações encontradas:</h4>
-      <div className="grid grid-cols-3 gap-4 text-sm font-mono mt-2">
-        {relations.map((rel, idx) => {
-          const parts = rel.split("↔");
-          return (
-            <div
-              key={idx}
-              className="col-span-3 grid grid-cols-3 gap-2 bg-gray-50 rounded p-2"
-            >
-              {parts.map((p, i) => (
-                <div key={i} className="truncate">
-                  {p}
-                </div>
-              ))}
-            </div>
-          );
-        })}
+      <div className="mt-2 space-y-2 text-sm font-mono">
+        {relations.map((rel, idx) => (
+          <div
+            key={idx}
+            className="grid grid-cols-2 gap-4 bg-gray-50 rounded p-2"
+          >
+            <div className="font-semibold">Ficheiros</div>
+            <div className="font-semibold">Colunas</div>
+
+            {/* separar ficheiros e colunas */}
+            <div>{rel.split(":")[0]}</div>
+            <div>{rel.split(":")[1] || "-"}</div>
+          </div>
+        ))}
       </div>
     </>
   )}
 </div>
-
-
- {/* ============================
-    Relações Automáticas
-============================ */}
-<div className="border rounded-xl p-4 shadow-md bg-white mt-6">
-  <h3 className="text-lg font-semibold mb-2">
-    Sugerir Mapeamento Inteligente
-  </h3>
-  <p className="text-sm text-gray-600 mb-3">
-    A aplicação analisa os ficheiros e propõe automaticamente as relações
-    mais prováveis, com base em nomes semelhantes e padrões de dados.
-  </p>
-
-  <button
-    onClick={handleAutoRelate}
-    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-  >
-    Sugerir Mapeamento Inteligente
-  </button>
-
-  {/* Relações encontradas – apenas mostra se houver algo */}
-  {Array.isArray(relations) && relations.length > 0 && (
-  <div className="grid grid-cols-3 gap-4 text-sm font-mono mt-4">
-    {relations.map((rel, idx) => {
-      const parts = rel.split("↔");
-      return (
-        <div
-          key={idx}
-          className="col-span-3 grid grid-cols-3 gap-2 bg-gray-50 rounded p-2"
-        >
-          {parts.map((p, i) => (
-            <div key={i} className="truncate">{p}</div>
-          ))}
-        </div>
-      );
-    })}
-  </div>
-)}
-
 
 
   {/* Retângulo 3 – Configurar Relações Avançadas */}
@@ -477,7 +460,8 @@ const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
       Configurar Relações Avançadas
     </button>
   </div>
-</div>
+
+
 
       {/* Botão Serviços */}
       <div className="fixed bottom-4 right-4">
@@ -489,7 +473,7 @@ const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
       {/* Footer */}
       <footer className="mt-12 text-center text-xs text-gray-600">Klinos Insight</footer>
     </div>
-  </div> 
+
 );
 };
 
